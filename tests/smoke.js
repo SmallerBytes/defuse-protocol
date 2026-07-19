@@ -137,4 +137,14 @@ check('different seeds -> different games', () => {
   }
 });
 
+console.log('fixed manuals across seeds');
+check('same manual content for different seeds', () => {
+  for (const mod of MODULES) {
+    const a = mod.generate(ctxFor('SEED-A:' + mod.type, 'normal'));
+    const b = mod.generate(ctxFor('SEED-B:' + mod.type, 'normal'));
+    // Manuals must be identical; device views must differ (or at least often).
+    assert.deepStrictEqual(a.manual, b.manual, `${mod.type} manual must be fixed`);
+  }
+});
+
 console.log(`\n${passed} checks passed`);

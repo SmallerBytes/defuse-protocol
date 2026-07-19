@@ -5,9 +5,32 @@
     "normal": [4, 5],
     "hard": [5, 6]
   },
-  "rulesPerCount": {
-    "easy": 3,
-    "normal": 4,
-    "hard": 5
+  "intro": "Identify how many wires are on the module, then apply the FIRST matching rule in that section. Wires are numbered top to bottom starting at 1. The serial number is engraved on the front of the case.",
+  "ruleSets": {
+    "3": [
+      { "cond": { "key": "noneOfColor", "color": "red" }, "act": { "key": "cutIndex", "index": 2 }, "text": "If there are no red wires, cut the second wire." },
+      { "cond": { "key": "lastWireIs", "color": "white" }, "act": { "key": "cutIndex", "index": 3 }, "text": "Otherwise, if the last wire is white, cut the third wire." },
+      { "cond": { "key": "moreThanOneOfColor", "color": "blue" }, "act": { "key": "cutLastOfColor", "color": "blue" }, "text": "Otherwise, if there is more than one blue wire, cut the last blue wire." },
+      { "cond": null, "act": { "key": "cutIndex", "index": 3 }, "text": "Otherwise, cut the third wire." }
+    ],
+    "4": [
+      { "cond": { "key": "moreThanOneRedAndSerialOdd" }, "act": { "key": "cutLastOfColor", "color": "red" }, "text": "If there is more than one red wire and the last digit of the serial number is odd, cut the last red wire." },
+      { "cond": { "key": "lastYellowAndNoRed" }, "act": { "key": "cutIndex", "index": 1 }, "text": "Otherwise, if the last wire is yellow and there are no red wires, cut the first wire." },
+      { "cond": { "key": "exactlyOneOfColor", "color": "blue" }, "act": { "key": "cutIndex", "index": 1 }, "text": "Otherwise, if there is exactly one blue wire, cut the first wire." },
+      { "cond": { "key": "moreThanOneOfColor", "color": "yellow" }, "act": { "key": "cutIndex", "index": 4 }, "text": "Otherwise, if there is more than one yellow wire, cut the fourth wire." },
+      { "cond": null, "act": { "key": "cutIndex", "index": 2 }, "text": "Otherwise, cut the second wire." }
+    ],
+    "5": [
+      { "cond": { "key": "lastBlackAndSerialOdd" }, "act": { "key": "cutIndex", "index": 4 }, "text": "If the last wire is black and the last digit of the serial number is odd, cut the fourth wire." },
+      { "cond": { "key": "oneRedAndMoreYellow" }, "act": { "key": "cutIndex", "index": 1 }, "text": "Otherwise, if there is exactly one red wire and there is more than one yellow wire, cut the first wire." },
+      { "cond": { "key": "noneOfColor", "color": "black" }, "act": { "key": "cutIndex", "index": 2 }, "text": "Otherwise, if there are no black wires, cut the second wire." },
+      { "cond": null, "act": { "key": "cutIndex", "index": 1 }, "text": "Otherwise, cut the first wire." }
+    ],
+    "6": [
+      { "cond": { "key": "noYellowAndSerialOdd" }, "act": { "key": "cutIndex", "index": 3 }, "text": "If there are no yellow wires and the last digit of the serial number is odd, cut the third wire." },
+      { "cond": { "key": "oneYellowAndMoreWhite" }, "act": { "key": "cutIndex", "index": 4 }, "text": "Otherwise, if there is exactly one yellow wire and there is more than one white wire, cut the fourth wire." },
+      { "cond": { "key": "noneOfColor", "color": "red" }, "act": { "key": "cutIndex", "index": 6 }, "text": "Otherwise, if there are no red wires, cut the sixth wire." },
+      { "cond": null, "act": { "key": "cutIndex", "index": 4 }, "text": "Otherwise, cut the fourth wire." }
+    ]
   }
 }

@@ -1,32 +1,39 @@
 /**
- * WIRE CUTTING MODULE
- * The device shows 3-6 colored wires. The manual contains a freshly
- * generated rule table for every possible wire count. The first rule
- * whose condition matches must be applied; otherwise the default rule.
+ * WIRE CUTTING — fixed manual rule tables; only the wire colors/count are random.
  */
 const data = require('../../data/modules/wires.json');
 
 const TYPE = 'wires';
 const NAME = 'Wire Cutting';
 
-const CONDITIONS = [
-  { key: 'noneOfColor', text: (c) => `there are no ${c} wires` },
-  { key: 'exactlyOneOfColor', text: (c) => `there is exactly one ${c} wire` },
-  { key: 'moreThanOneOfColor', text: (c) => `there is more than one ${c} wire` },
-  { key: 'lastWireIs', text: (c) => `the last wire is ${c}` },
-  { key: 'serialOdd', text: () => `the last digit of the serial number is odd` }
-];
+function countColor(wires, c) {
+  return wires.filter((w) => w === c).length;
+}
 
-const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+function serialOdd(serial) {
+  return parseInt(serial[serial.length - 1], 10) % 2 === 1;
+}
 
 function conditionMatches(cond, wires, serial) {
-  const count = (c) => wires.filter((w) => w === c).length;
+  if (!cond) return true;
   switch (cond.key) {
-    case 'noneOfColor': return count(cond.color) === 0;
-    case 'exactlyOneOfColor': return count(cond.color) === 1;
-    case 'moreThanOneOfColor': return count(cond.color) > 1;
+    case 'noneOfColor': return countColor(wires, cond.color) === 0;
+    case 'exactlyOneOfColor': return countColor(wires, cond.color) === 1;
+    case 'moreThanOneOfColor': return countColor(wires, cond.color) > 1;
     case 'lastWireIs': return wires[wires.length - 1] === cond.color;
-    case 'serialOdd': return parseInt(serial[serial.length - 1], 10) % 2 === 1;
+    case 'serialOdd': return serialOdd(serial);
+    case 'moreThanOneRedAndSerialOdd':
+      return countColor(wires, 'red') > 1 && serialOdd(serial);
+    case 'lastYellowAndNoRed':
+      return wires[wires.length - 1] === 'yellow' && countColor(wires, 'red') === 0;
+    case 'lastBlackAndSerialOdd':
+      return wires[wires.length - 1] === 'black' && serialOdd(serial);
+    case 'oneRedAndMoreYellow':
+      return countColor(wires, 'red') === 1 && countColor(wires, 'yellow') > 1;
+    case 'noYellowAndSerialOdd':
+      return countColor(wires, 'yellow') === 0 && serialOdd(serial);
+    case 'oneYellowAndMoreWhite':
+      return countColor(wires, 'yellow') === 1 && countColor(wires, 'white') > 1;
     default: return false;
   }
 }
@@ -40,79 +47,37 @@ function resolveAction(act, wires) {
   }
 }
 
-function actionText(act) {
-  if (act.key === 'cutIndex') return `cut the ${ORDINALS[act.index - 1]} wire`;
-  if (act.key === 'cutFirstOfColor') return `cut the first ${act.color} wire`;
-  return `cut the last ${act.color} wire`;
-}
-
-/** Generate the conditional rule list for one wire count. */
-function generateRules(rng, wireCount, ruleCount) {
-  const rules = [];
-  const usedConditions = new Set();
-  let guard = 0;
-  while (rules.length < ruleCount && guard++ < 100) {
-    const condDef = rng.pick(CONDITIONS);
-    const color = rng.pick(data.colors);
-    const condKey = condDef.key + (condDef.key === 'serialOdd' ? '' : ':' + color);
-    if (usedConditions.has(condKey)) continue;
-    usedConditions.add(condKey);
-
-    const cond = { key: condDef.key, color };
-    // Color-referencing cut actions are only safe when the condition
-    // guarantees at least one wire of that color exists.
-    const guaranteesColor = ['exactlyOneOfColor', 'moreThanOneOfColor', 'lastWireIs'].includes(condDef.key);
-    let act;
-    if (guaranteesColor && rng.chance(0.55)) {
-      act = { key: rng.pick(['cutFirstOfColor', 'cutLastOfColor']), color };
-    } else {
-      act = { key: 'cutIndex', index: rng.int(1, wireCount) };
-    }
-    rules.push({ cond, act, text: `If ${condDef.text(color)}, ${actionText(act)}.` });
-  }
-  // Unconditional fallback rule.
-  const def = { key: 'cutIndex', index: rng.int(1, wireCount) };
-  rules.push({ cond: null, act: def, text: `Otherwise, ${actionText(def)}.` });
-  return rules;
-}
-
 function solve(ruleSet, wires, serial) {
   for (const rule of ruleSet) {
-    if (rule.cond === null || conditionMatches(rule.cond, wires, serial)) {
+    if (conditionMatches(rule.cond, wires, serial)) {
       return resolveAction(rule.act, wires);
     }
   }
   return 1;
 }
 
+function fixedManual() {
+  return {
+    intro: data.intro,
+    sections: Object.keys(data.ruleSets)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((n) => ({
+        title: `If the device has ${n} wires`,
+        rules: data.ruleSets[n].map((r) => r.text)
+      }))
+  };
+}
+
 function generate(ctx) {
   const { rng, difficulty, serial } = ctx;
   const [minW, maxW] = data.wireCountsByDifficulty[difficulty];
   const wireCount = rng.int(minW, maxW);
-  const ruleCount = data.rulesPerCount[difficulty];
-
-  // Manual covers every count so the Expert can't infer the device layout.
-  const ruleSets = {};
-  for (let n = minW - 1; n <= maxW + 1; n++) {
-    if (n < 3 || n > 6) continue;
-    ruleSets[n] = generateRules(rng, n, ruleCount);
-  }
-  if (!ruleSets[wireCount]) ruleSets[wireCount] = generateRules(rng, wireCount, ruleCount);
-
   const wires = Array.from({ length: wireCount }, () => rng.pick(data.colors));
-  const solution = solve(ruleSets[wireCount], wires, serial);
+  const ruleSet = data.ruleSets[String(wireCount)];
+  const solution = solve(ruleSet, wires, serial);
 
   const state = { wires, cut: wires.map(() => false), solution };
-
-  const manual = {
-    intro: 'Identify the number of wires, then apply the FIRST matching rule from the matching table. Wires are numbered top to bottom starting at 1.',
-    sections: Object.entries(ruleSets).map(([n, rules]) => ({
-      title: `If the device has ${n} wires`,
-      rules: rules.map((r) => r.text)
-    }))
-  };
-
-  return { state, manual, view: view(state) };
+  return { state, manual: fixedManual(), view: view(state) };
 }
 
 function view(state) {
@@ -123,7 +88,7 @@ function view(state) {
 
 function action(state, act) {
   if (act.type !== 'cut') return { status: 'ok', view: view(state) };
-  const idx = act.index; // 1-based
+  const idx = act.index;
   if (!idx || idx < 1 || idx > state.wires.length || state.cut[idx - 1]) {
     return { status: 'ok', view: view(state) };
   }
@@ -134,4 +99,4 @@ function action(state, act) {
   return { status: 'strike', view: view(state), detail: `wrong wire ${idx}, expected ${state.solution}` };
 }
 
-module.exports = { type: TYPE, name: NAME, generate, action };
+module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };

@@ -5,10 +5,10 @@ A cooperative multiplayer puzzle game about talking fast under pressure.
 One player — the **Defuser** — sits in front of a **fully 3D bomb device** on a
 table in a dimly lit room: a metal case with protruding module faceplates, real
 wires, keycaps, lamps, and an engraved serial plate, viewed through an orbiting
-perspective camera. Everyone else — the **Experts** — sees only a classified
-defusal manual whose rules are **regenerated for every game**. Nobody has the
-full picture. Solve every module before the timer hits zero, and don't collect
-too many strikes.
+perspective camera. Everyone else — the **Experts** — holds a **fixed Field
+Manual** (print it once, or open `manual.html`). The **bomb is random every
+game**; the manual rules never change. Nobody has the full picture. Solve every
+module before the timer hits zero, and don't collect too many strikes.
 
 The Defuser scene is rendered with Three.js (WebGL): PBR materials with
 environment reflections, two physical shadow-casting light sources, SSAO,
@@ -42,8 +42,9 @@ npm start          # http://localhost:3210  (auto-picks next free port if busy)
 
 > `file://` and plain HTTP will not start WebXR.
 
-> The Defuser may not look at the manual screen, and the Experts may not look at
-> the device. That's the whole game — enforce it on the honor system (or separate rooms).
+> The Defuser may not look at the manual, and the Experts may not look at
+> the device. Experts: open **[Field Manual](public/manual.html)** (also linked
+> in-game) and use **Print → Save as PDF** once — the rules never change.
 
 ## Scripts
 
@@ -57,16 +58,15 @@ npm start          # http://localhost:3210  (auto-picks next free port if busy)
 
 ## The Modules
 
-| Module          | Defuser sees (3D hardware)                                  | Experts have                                        |
+| Module          | Defuser sees (3D hardware)                                  | Experts have (fixed manual)                         |
 | --------------- | ----------------------------------------------------------- | --------------------------------------------------- |
-| Wire Cutting    | 3–6 sagging wire tubes strung between terminal posts        | A freshly generated rule table per wire count       |
-| Symbol Matching | 4 physical keycaps with printed glyphs                      | 6 overlapping symbol columns; press in column order |
-| Memory Sequence | A glowing display housing + 4 labeled keycaps               | Per-stage rules referencing earlier presses         |
-| Morse Code      | A glass dome lamp (real light source), tuning knob, TX key  | Morse alphabet + word→frequency table               |
-| Logic Grid      | A tilted CRT question screen + 3 answer bars                | Clue list that pins down a unique assignment        |
+| Wire Cutting    | Random colored wires                                        | Fixed rule tables by wire count                     |
+| Symbol Matching | 4 random glyphs from one column                             | Fixed 6 symbol columns                              |
+| Memory Sequence | Random displays + shuffled labels                           | Fixed per-stage lookup rules                       |
+| Morse Code      | Random word flashed in Morse                                | Fixed alphabet + word→frequency table              |
+| Logic Grid      | Intercepted notes + question (read notes aloud)             | Fixed roster; notes are on the device              |
 
-Every table, rule, clue, and symbol column is derived from the game seed, so no
-two games (or manuals) are the same — and any seed can be replayed.
+The **manual is permanent**. Only the bomb layout is random each game (replayable via seed).
 
 ## Difficulty
 
@@ -123,8 +123,9 @@ KTNE/
 - **The server is the only authority.** Clients never receive solutions: the
   Defuser gets sanitized module *views*, Experts get *manuals*, and all actions
   are validated server-side. Experts physically cannot trigger device actions.
-- **Manuals are generated, not static.** Rule tables are built from the seed at
-  game start, so memorizing the manual between games is impossible.
+- **Manual is fixed; bomb is random.** Experts print or bookmark `manual.html`
+  once. Device layouts (wires, symbols, stages, Morse word, logic notes) are
+  seeded per game for replayability.
 - **Session logs** (`logs/*.jsonl`) record every action, strike, and outcome
   with timestamps for post-game review and debugging.
 - **3D rendering** uses Three.js loaded from the jsDelivr CDN via an import

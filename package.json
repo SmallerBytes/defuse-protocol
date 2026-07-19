@@ -8,7 +8,7 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "test": "node tests/smoke.js",
-    "build:solo": "esbuild server/game.js --bundle --format=esm --outfile=public/js/solo/game-bundle.js --platform=browser"
+    "build:solo": "npx --yes esbuild server/game.js --bundle --format=esm --outfile=public/js/solo/game-bundle.js --platform=browser"
   },
   "engines": {
     "node": ">=18"

@@ -28,7 +28,9 @@ Gameplay cues in VR (HTML HUD is hidden in-headset):
 
 - Timer + strike LEDs live **on the bomb**
 - Serial number is engraved on the **front** of the case — walk/snap around to read it
-- Solo demo also shows manuals on the flat browser page before you enter VR (read them first, or exit VR to check)
+- **Experts outside the headset** should use the fixed Field Manual:
+  `https://smallerbytes.github.io/defuse-protocol/manual.html`
+  (Print → Save as PDF). Solo demo still shows the manual on-screen for practice.
 
 ## Multiplayer on Quest
 
@@ -62,7 +64,7 @@ Open the printed `https://…` URL on the Quest. Prefer **VR SOLO DEMO** if you 
 ## Remaining VR limitations
 
 - **HTML HUD** is hidden while presenting; rely on the device timer / LEDs / audio
-- **Solo manuals** aren’t in-world 3D panels yet — read them before ENTER VR or leave VR briefly
+- **Experts** should use the printed/PDF Field Manual on a phone or laptop — not the headset
 - **Perf:** VR forces LOW quality (no SSAO/DOF, no point-light shadows). Quest 2 may still dip in dense modules
 - **Comfort:** snap turn only (no smooth turn). No teleport yet
 - **Multiplayer + Pages** requires a separate HTTPS Node backend

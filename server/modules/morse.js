@@ -1,28 +1,30 @@
 /**
- * MORSE CODE MODULE
- * A lamp on the device flashes a word in Morse, looping forever. The
- * Defuser describes the dots and dashes; the Experts decode letters using
- * the alphabet chart, find the word in the manual's frequency table, and
- * the Defuser tunes the dial to that frequency and transmits.
+ * MORSE CODE — fixed alphabet + word/frequency table in the manual.
+ * Each game picks one word from that table to flash.
  */
 const data = require('../../data/modules/morse.json');
 
 const TYPE = 'morse';
 const NAME = 'Morse Code';
 
-function generate(ctx) {
-  const { rng, difficulty } = ctx;
-  const [minLen, maxLen] = data.wordLengthByDifficulty[difficulty];
-  const candidates = data.words.filter((w) => w.length >= minLen && w.length <= maxLen);
-  const tableWords = rng.sample(candidates.length >= data.tableSize ? candidates : data.words, data.tableSize);
-  const word = rng.pick(tableWords);
+function fixedManual() {
+  return {
+    intro: data.intro,
+    alphabet: data.alphabet,
+    table: data.table.map((e) => ({
+      word: e.word,
+      freq: Number(e.freq).toFixed(3) + ' MHz'
+    }))
+  };
+}
 
-  // Assign each word a unique frequency, sorted ascending on the dial.
-  const offsets = rng.shuffle(Array.from({ length: data.tableSize * 2 }, (_, i) => i)).slice(0, tableWords.length);
-  const entries = tableWords
-    .map((w, i) => ({ word: w, freq: +(data.baseFrequency + offsets[i] * data.frequencyStep).toFixed(3) }))
+function generate(ctx) {
+  const { rng } = ctx;
+  const entries = data.table
+    .map((e) => ({ word: e.word, freq: +Number(e.freq).toFixed(3) }))
     .sort((a, b) => a.freq - b.freq);
 
+  const word = rng.pick(entries).word;
   const solutionFreq = entries.find((e) => e.word === word).freq;
   const pattern = word.split('').map((ch) => data.alphabet[ch]);
 
@@ -34,20 +36,14 @@ function generate(ctx) {
     pattern
   };
 
-  const manual = {
-    intro: 'Decode the flashing signal letter by letter (a long gap separates letters; the word loops with an even longer gap). Find the word in the frequency table, then have the Defuser tune to that frequency and transmit.',
-    alphabet: data.alphabet,
-    table: entries.map((e) => ({ word: e.word, freq: e.freq.toFixed(3) + ' MHz' }))
-  };
-
-  return { state, manual, view: view(state) };
+  return { state, manual: fixedManual(), view: view(state) };
 }
 
 function view(state) {
   return {
-    pattern: state.pattern,          // array of morse strings, one per letter
-    frequencies: state.frequencies,  // dial stops
-    selected: state.selected         // index into frequencies
+    pattern: state.pattern,
+    frequencies: state.frequencies,
+    selected: state.selected
   };
 }
 
@@ -67,4 +63,4 @@ function action(state, act) {
   return { status: 'ok', view: view(state) };
 }
 
-module.exports = { type: TYPE, name: NAME, generate, action };
+module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };

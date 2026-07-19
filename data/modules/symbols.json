@@ -1,10 +1,15 @@
 {
-  "glyphs": [
-    "ϡ", "Ѭ", "ϗ", "Ͽ", "҂", "ʘ", "Ω", "ɸ", "Ж", "Ϟ",
-    "Ѱ", "Ҕ", "ξ", "Ψ", "Ǯ", "Ⴔ", "Ϫ", "Ҩ", "Ɣ", "Ϭ",
-    "Ʊ", "Ӝ", "Ֆ", "Ћ", "Ɂ", "Ԇ", "Ӂ", "Ѻ"
-  ],
+  "glyphs": ["ϡ", "Ѭ", "ϗ", "Ͽ", "҂", "ʘ", "Ω", "ɸ", "Ж", "Ϟ", "Ѱ", "Ҕ", "ξ", "Ψ", "Ǯ", "Ⴔ", "Ϫ", "Ҩ", "Ɣ", "Ϭ", "Ʊ", "Ӝ", "Ֆ", "Ћ", "Ɂ", "Ԇ", "Ӂ", "Ѻ"],
   "columns": 6,
   "symbolsPerColumn": 7,
-  "buttonsOnDevice": 4
+  "buttonsOnDevice": 4,
+  "intro": "Exactly one column below contains all four symbols shown on the device. Press those four symbols in the order they appear in that column, reading top to bottom.",
+  "fixedColumns": [
+    ["ϡ", "Ѭ", "ϗ", "Ϟ", "Ͽ", "҂", "ʘ"],
+    ["Ω", "ɸ", "Ж", "ϡ", "Ѱ", "Ҕ", "ξ"],
+    ["Ψ", "Ǯ", "Ⴔ", "Ϫ", "Ҩ", "Ж", "Ϟ"],
+    ["Ɣ", "Ϭ", "Ʊ", "Ӝ", "Ψ", "Ѭ", "ϗ"],
+    ["Ֆ", "Ћ", "Ɂ", "Ԇ", "Ӂ", "Ѻ", "ϡ"],
+    ["ʘ", "Ω", "Ҩ", "Ɣ", "Ֆ", "Ћ", "Ǯ"]
+  ]
 }

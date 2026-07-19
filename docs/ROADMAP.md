@@ -23,8 +23,7 @@
 
 - [ ] **Campaign mode** — series of devices with escalating module counts and a
       shared strike pool
-- [ ] **Manual printing** — `GET /manual/:roomCode` printable HTML so Experts
-      can play from paper
+- [x] **Manual printing** — `public/manual.html` fixed Field Manual (Print → Save as PDF)
 - [ ] **Persistent accounts + leaderboards** — swap `stats.js` for the SQL
       schema in ARCHITECTURE.md; track per-player solve times by module type
 - [ ] **Replay viewer** — the JSONL session logs already contain everything

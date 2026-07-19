@@ -83,8 +83,10 @@ body {
 .btn.ghost { background: transparent; color: var(--muted); border-color: transparent; margin-top: 12px; width: 100%; }
 .btn.active-role { background: var(--accent); color: #06251a; border-color: var(--accent); }
 
-.home-actions { display: flex; flex-direction: column; gap: 12px; }
-.home-actions .primary { width: 100%; }
+.home-actions .ghost {
+  display: block; text-align: center; text-decoration: none;
+  margin-top: 4px; border: 1px dashed var(--line);
+}
 .join-row { display: flex; gap: 8px; }
 .join-row input { text-transform: uppercase; letter-spacing: 0.3em; flex: 1; }
 

@@ -6,17 +6,25 @@
     "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-",
     "Y": "-.--", "Z": "--.."
   },
-  "words": [
-    "ROTOR", "EMBER", "PYLON", "VAULT", "COMET", "ANVIL",
-    "SPARK", "RELAY", "CIPHER", "QUARK", "NEXUS", "ORBIT",
-    "FLINT", "GLYPH", "WIDOW", "ZEPHYR"
-  ],
-  "tableSize": 10,
-  "baseFrequency": 3.5,
+  "intro": "Decode the flashing signal letter by letter (a short gap separates dots/dashes within a letter; a longer gap separates letters; the word loops with a long pause). Find the decoded word in the frequency table, then have the Defuser tune to that frequency and transmit (TX).",
+  "baseFrequency": 3.505,
   "frequencyStep": 0.005,
-  "wordLengthByDifficulty": {
-    "easy": [5, 5],
-    "normal": [5, 6],
-    "hard": [5, 6]
-  }
+  "table": [
+    { "word": "SHELL", "freq": 3.505 },
+    { "word": "HALLS", "freq": 3.515 },
+    { "word": "SLICK", "freq": 3.522 },
+    { "word": "TRICK", "freq": 3.532 },
+    { "word": "BOXES", "freq": 3.535 },
+    { "word": "LEAKS", "freq": 3.542 },
+    { "word": "STROBE", "freq": 3.545 },
+    { "word": "BISTRO", "freq": 3.552 },
+    { "word": "FLICK", "freq": 3.555 },
+    { "word": "BOMBS", "freq": 3.565 },
+    { "word": "BREAK", "freq": 3.572 },
+    { "word": "BRICK", "freq": 3.575 },
+    { "word": "STEAK", "freq": 3.582 },
+    { "word": "STING", "freq": 3.592 },
+    { "word": "VECTOR", "freq": 3.595 },
+    { "word": "BEATS", "freq": 3.600 }
+  ]
 }

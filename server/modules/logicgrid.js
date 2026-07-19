@@ -1,9 +1,7 @@
 /**
- * LOGIC GRID MODULE
- * The server generates a small logic puzzle (engineers x panels x shifts)
- * with a clue list that admits exactly one solution. The clues live in the
- * Experts' manual; the question and answer buttons live on the device.
- * Neither side can solve it alone.
+ * LOGIC GRID — fixed roster in the manual. Clues are shown on the DEVICE
+ * (Defuser reads them aloud). Truth assignment + which clues/questions
+ * appear are randomized each game.
  */
 const data = require('../../data/modules/logicgrid.json');
 
@@ -20,7 +18,6 @@ function permutations(arr) {
   return out;
 }
 
-/** assignment: { panels: [pIdx per engineer], shifts: [sIdx per engineer] } */
 function clueHolds(clue, asg) {
   switch (clue.kind) {
     case 'panel': return asg.panels[clue.e] === clue.p;
@@ -71,18 +68,35 @@ function randomTrueClue(rng, truth, n) {
   }
 }
 
+function fixedManual() {
+  return {
+    intro: data.intro,
+    rosterNote: data.rosterNote,
+    entities: {
+      engineers: data.engineers,
+      panels: data.panels,
+      shifts: data.shifts
+    },
+    // Clues live on the device now — manual only has the fixed roster.
+    clues: [
+      'Ask the Defuser to read the INTERCEPTED NOTES from the module screen.',
+      'Fill the roster so each engineer has exactly one panel and one shift.',
+      'Then answer the question shown on the device.'
+    ]
+  };
+}
+
 function generate(ctx) {
   const { rng, difficulty } = ctx;
   const n = data.entitiesByDifficulty[difficulty];
-  const names = rng.sample(data.engineers, n);
-  const panels = rng.sample(data.panels, n);
-  const shifts = rng.sample(data.shifts, n);
+  // Fixed roster every game (manual can be printed once).
+  const names = data.engineers.slice(0, n);
+  const panels = data.panels.slice(0, n);
+  const shifts = data.shifts.slice(0, n);
 
   const idx = Array.from({ length: n }, (_, i) => i);
   const truth = { panels: rng.shuffle(idx), shifts: rng.shuffle(idx) };
 
-  // Add random true clues until the solution is unique among all
-  // permutation pairs (n!^2 candidates; tiny search space).
   const allCandidates = [];
   for (const pp of permutations(idx)) {
     for (const sp of permutations(idx)) allCandidates.push({ panels: pp, shifts: sp });
@@ -99,7 +113,8 @@ function generate(ctx) {
     }
   }
 
-  // Build the device questions.
+  const clueLines = rng.shuffle(clues).map((c) => clueText(c, names, panels, shifts));
+
   const questionCount = data.questionsByDifficulty[difficulty];
   const questions = [];
   const qTypes = rng.shuffle(['panelOf', 'engineerOfShift']);
@@ -123,15 +138,14 @@ function generate(ctx) {
     }
   }
 
-  const state = { questions, stage: 0 };
-
-  const manual = {
-    intro: `Three engineers each maintain one panel and work one shift (no two share either). Use the clues to reconstruct the full assignment, then answer the question shown on the device.`,
-    entities: { engineers: names, panels, shifts },
-    clues: rng.shuffle(clues).map((c) => clueText(c, names, panels, shifts))
+  const state = {
+    questions,
+    stage: 0,
+    clues: clueLines,
+    clueIndex: 0
   };
 
-  return { state, manual, view: view(state) };
+  return { state, manual: fixedManual(), view: view(state) };
 }
 
 function view(state) {
@@ -140,11 +154,20 @@ function view(state) {
     stage: state.stage + 1,
     totalStages: state.questions.length,
     question: q ? q.text : null,
-    options: q ? q.options : []
+    options: q ? q.options : [],
+    // Defuser reads these aloud — they are NOT in the printed manual.
+    clues: state.clues,
+    clueIndex: state.clueIndex
   };
 }
 
 function action(state, act) {
+  if (act.type === 'nextClue') {
+    if (state.clues.length) {
+      state.clueIndex = (state.clueIndex + 1) % state.clues.length;
+    }
+    return { status: 'ok', view: view(state) };
+  }
   if (act.type !== 'answer') return { status: 'ok', view: view(state) };
   const q = state.questions[state.stage];
   if (!q || !q.options.includes(act.option)) return { status: 'ok', view: view(state) };
@@ -159,4 +182,4 @@ function action(state, act) {
   return { status: 'strike', view: view(state), detail: `wrong answer ${act.option}, expected ${q.answer}` };
 }
 
-module.exports = { type: TYPE, name: NAME, generate, action };
+module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };

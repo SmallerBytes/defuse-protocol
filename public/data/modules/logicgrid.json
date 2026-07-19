@@ -1,7 +1,7 @@
 {
-  "engineers": ["VEGA", "OKAFOR", "REYES", "TANAKA", "MORROW", "IDRIS"],
-  "panels": ["CRIMSON", "TEAL", "AMBER", "VIOLET"],
-  "shifts": ["DAWN", "DUSK", "NIGHT", "NOON"],
+  "engineers": ["VEGA", "OKAFOR", "REYES"],
+  "panels": ["CRIMSON", "TEAL", "AMBER"],
+  "shifts": ["DAWN", "DUSK", "NIGHT"],
   "entitiesByDifficulty": {
     "easy": 3,
     "normal": 3,
@@ -11,5 +11,7 @@
     "easy": 1,
     "normal": 2,
     "hard": 2
-  }
+  },
+  "intro": "Three engineers each maintain one panel and work one shift (no two share either). The Defuser will read the intercepted notes aloud from the module screen. Use those notes with the roster below to fill the assignment, then answer the question the Defuser sees on the device.",
+  "rosterNote": "Roster is always the same. Only the intercepted notes and the device question change between games."
 }

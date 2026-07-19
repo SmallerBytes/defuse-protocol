@@ -1,12 +1,9 @@
 /**
- * MEMORY SEQUENCE MODULE
- * Multi-stage puzzle. Each stage shows a display digit (1-4) and four
- * labeled buttons. The manual maps (stage, display) -> an instruction that
- * may reference WHICH POSITION or WHICH LABEL was pressed in an earlier
- * stage, forcing the team to keep a shared history.
- * A mistake strikes and resets the module to stage 1.
+ * MEMORY SEQUENCE — fixed stage/display rule table; only the display digits
+ * and button label layouts are random each game / stage.
  */
 const data = require('../../data/modules/memory.json');
+const { Rng } = require('../rng');
 
 const TYPE = 'memory';
 const NAME = 'Memory Sequence';
@@ -23,25 +20,15 @@ function instructionText(ins) {
   }
 }
 
-function generateRuleTable(rng, stages, buttons) {
-  // table[stage][display] = instruction
-  const table = [];
-  for (let s = 1; s <= stages; s++) {
-    const row = {};
-    for (let d = 1; d <= buttons; d++) {
-      const kinds = s === 1
-        ? ['position', 'label']
-        : ['position', 'label', 'samePosition', 'sameLabel', 'samePosition', 'sameLabel'];
-      const kind = rng.pick(kinds);
-      if (kind === 'position' || kind === 'label') {
-        row[d] = { kind, n: rng.int(1, buttons) };
-      } else {
-        row[d] = { kind, stage: rng.int(1, s - 1) };
-      }
-    }
-    table.push(row);
-  }
-  return table;
+function fixedManual(stages) {
+  const n = stages || data.stages;
+  return {
+    intro: data.intro,
+    stages: data.table.slice(0, n).map((row, i) => ({
+      title: `Stage ${i + 1}`,
+      rules: Object.entries(row).map(([d, ins]) => `If the display shows ${d}, ${instructionText(ins)}.`)
+    }))
+  };
 }
 
 function newStage(rng, buttons) {
@@ -65,32 +52,21 @@ function generate(ctx) {
   const { rng, difficulty } = ctx;
   const stages = data.stagesByDifficulty[difficulty] || data.stages;
   const buttons = data.buttons;
+  const table = data.table.slice(0, stages);
 
-  const table = generateRuleTable(rng, stages, buttons);
   const state = {
-    rng: null, // replaced below; rng stream stored for stage regeneration
     stages,
     buttons,
     table,
     stage: 1,
     history: [],
-    current: newStage(rng, buttons),
+    current: null,
     _rngSeed: rng.seed + '::stages'
   };
-  // Dedicated child stream so stage regeneration after strikes stays seeded.
-  const { Rng } = require('../rng');
   state._stageRng = new Rng(state._rngSeed);
   state.current = newStage(state._stageRng, buttons);
 
-  const manual = {
-    intro: `This module has ${stages} stages. For each stage, look up the rule matching the number on the display. Positions are counted left to right starting at 1. A mistake resets the module to stage 1.`,
-    stages: table.map((row, i) => ({
-      title: `Stage ${i + 1}`,
-      rules: Object.entries(row).map(([d, ins]) => `If the display shows ${d}, ${instructionText(ins)}.`)
-    }))
-  };
-
-  return { state, manual, view: view(state) };
+  return { state, manual: fixedManual(stages), view: view(state) };
 }
 
 function view(state) {
@@ -104,10 +80,10 @@ function view(state) {
 
 function action(state, act) {
   if (act.type !== 'press') return { status: 'ok', view: view(state) };
-  const pos = act.position; // 1-based
+  const pos = act.position;
   if (!pos || pos < 1 || pos > state.buttons) return { status: 'ok', view: view(state) };
 
-  const ins = state.table[state.stage - 1][state.current.display];
+  const ins = state.table[state.stage - 1][String(state.current.display)];
   const correct = correctPosition(ins, state.current, state.history);
 
   if (pos === correct) {
@@ -120,11 +96,10 @@ function action(state, act) {
     return { status: 'ok', view: view(state), detail: `stage ${state.stage - 1} passed` };
   }
 
-  // Strike: reset to stage 1 with a fresh stage layout.
   state.stage = 1;
   state.history = [];
   state.current = newStage(state._stageRng, state.buttons);
   return { status: 'strike', view: view(state), detail: `wrong position ${pos}, expected ${correct}; reset to stage 1` };
 }
 
-module.exports = { type: TYPE, name: NAME, generate, action };
+module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };

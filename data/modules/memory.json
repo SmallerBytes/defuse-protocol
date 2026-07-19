@@ -1,9 +1,42 @@
 {
-  "stages": 5,
   "buttons": 4,
+  "stages": 5,
   "stagesByDifficulty": {
     "easy": 3,
     "normal": 4,
     "hard": 5
-  }
+  },
+  "intro": "This module has several stages. For each stage, look up the rule for the current stage and the number on the display. Positions are counted left to right starting at 1. Labels are the numbers printed on the buttons. A mistake strikes and resets the module to stage 1.",
+  "table": [
+    {
+      "1": { "kind": "position", "n": 2 },
+      "2": { "kind": "position", "n": 2 },
+      "3": { "kind": "position", "n": 3 },
+      "4": { "kind": "position", "n": 4 }
+    },
+    {
+      "1": { "kind": "label", "n": 4 },
+      "2": { "kind": "samePosition", "stage": 1 },
+      "3": { "kind": "position", "n": 1 },
+      "4": { "kind": "samePosition", "stage": 1 }
+    },
+    {
+      "1": { "kind": "sameLabel", "stage": 2 },
+      "2": { "kind": "sameLabel", "stage": 1 },
+      "3": { "kind": "position", "n": 3 },
+      "4": { "kind": "label", "n": 4 }
+    },
+    {
+      "1": { "kind": "samePosition", "stage": 1 },
+      "2": { "kind": "position", "n": 1 },
+      "3": { "kind": "samePosition", "stage": 2 },
+      "4": { "kind": "samePosition", "stage": 2 }
+    },
+    {
+      "1": { "kind": "sameLabel", "stage": 1 },
+      "2": { "kind": "sameLabel", "stage": 2 },
+      "3": { "kind": "sameLabel", "stage": 4 },
+      "4": { "kind": "sameLabel", "stage": 3 }
+    }
+  ]
 }
