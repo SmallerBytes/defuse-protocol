@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>DEFUSE PROTOCOL</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ============ HOME ============ -->
+  <section id="screen-home" class="screen active">
+    <div class="home-card">
+      <h1 class="logo">DEFUSE<span>PROTOCOL</span></h1>
+      <p class="tagline">One of you sees the device. The rest hold the manual. Talk fast.</p>
+      <p id="xr-status" class="xr-status">Checking WebXR…</p>
+
+      <label class="field">
+        <span>CODENAME</span>
+        <input id="input-name" maxlength="20" placeholder="e.g. WRENCH" autocomplete="off" />
+      </label>
+
+      <div class="home-actions">
+        <button id="btn-solo-vr" class="btn primary">VR SOLO DEMO (QUEST)</button>
+        <button id="btn-create" class="btn">CREATE ROOM</button>
+        <div class="join-row">
+          <input id="input-code" maxlength="4" placeholder="CODE" autocomplete="off" />
+          <button id="btn-join" class="btn">JOIN</button>
+        </div>
+      </div>
+
+      <div id="home-error" class="error-text"></div>
+      <p class="hint controls-hint">
+        <strong>Quest VR:</strong> Trigger = interact · Left stick = move · Right stick L/R = snap turn 30° ·
+        HTTPS required (GitHub Pages or tunnel). Desktop: create/join rooms as before.
+      </p>
+
+      <div id="stats-panel" class="stats-panel hidden">
+        <h3>FIELD RECORD</h3>
+        <div id="stats-grid" class="stats-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LOBBY ============ -->
+  <section id="screen-lobby" class="screen">
+    <div class="lobby-card">
+      <h2>STAGING AREA</h2>
+      <div class="room-code-row">
+        <span>ROOM CODE</span>
+        <strong id="lobby-code" class="room-code">----</strong>
+      </div>
+
+      <ul id="player-list" class="player-list"></ul>
+
+      <div class="role-row">
+        <span>YOUR ROLE</span>
+        <div class="role-toggle">
+          <button id="btn-role-defuser" class="btn small">DEFUSER</button>
+          <button id="btn-role-expert" class="btn small">EXPERT</button>
+        </div>
+      </div>
+
+      <div id="host-controls" class="host-controls hidden">
+        <label class="field">
+          <span>DIFFICULTY</span>
+          <select id="select-difficulty">
+            <option value="easy">EASY — 3 modules · 6:00 · 3 strikes</option>
+            <option value="normal" selected>NORMAL — 5 modules · 5:00 · 3 strikes</option>
+            <option value="hard">HARD — 5 modules · 3:30 · 2 strikes</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>SEED (optional, for replays)</span>
+          <input id="input-seed" placeholder="random" autocomplete="off" />
+        </label>
+        <button id="btn-start" class="btn primary">ARM THE DEVICE</button>
+      </div>
+      <p id="lobby-hint" class="hint"></p>
+      <div id="lobby-error" class="error-text"></div>
+      <button id="btn-leave" class="btn ghost">LEAVE ROOM</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="screen-game" class="screen">
+    <header class="game-header">
+      <div class="hud-block">
+        <span class="hud-label">TIME</span>
+        <span id="hud-timer" class="hud-timer">0:00</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">STRIKES</span>
+        <span id="hud-strikes" class="hud-strikes"></span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">SOLVED</span>
+        <span id="hud-solved">0/0</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">SEED</span>
+        <span id="hud-seed" class="hud-seed">—</span>
+      </div>
+      <div class="hud-block hud-right hidden" id="hud-quality">
+        <span class="hud-label">VIDEO</span>
+        <select id="select-quality" class="hud-select">
+          <option value="low">LOW</option>
+          <option value="medium">MEDIUM</option>
+          <option value="high">HIGH</option>
+        </select>
+      </div>
+      <div class="hud-block hidden" id="hud-vr">
+        <span class="hud-label">VR</span>
+        <button id="btn-enter-vr" class="btn small btn-vr">ENTER VR (QUEST)</button>
+      </div>
+    </header>
+
+    <div id="game-split">
+      <!-- Defuser: the device (full 3D scene) -->
+      <div id="defuser-area" class="hidden">
+        <div id="scene-container"></div>
+        <div id="scene-hint" class="scene-hint">DRAG to orbit · SCROLL to zoom · CLICK components to interact</div>
+      </div>
+
+      <!-- Expert: the manual -->
+      <div id="expert-area" class="hidden">
+        <div class="manual-banner">CLASSIFIED — DEFUSAL MANUAL · DO NOT SHOW THE DEFUSER</div>
+        <nav id="manual-tabs" class="manual-tabs"></nav>
+        <div id="manual-content" class="manual-content"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ END ============ -->
+  <section id="screen-end" class="screen">
+    <div class="end-card">
+      <h2 id="end-title">—</h2>
+      <p id="end-reason" class="end-reason"></p>
+      <div id="end-summary" class="end-summary"></div>
+      <button id="btn-back-lobby" class="btn primary">BACK</button>
+    </div>
+  </section>
+
+  <div id="strike-flash" class="strike-flash"></div>
+
+  <!-- CDN socket.io so static Pages hosts still load the client library -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

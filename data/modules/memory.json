@@ -1,0 +1,9 @@
+{
+  "stages": 5,
+  "buttons": 4,
+  "stagesByDifficulty": {
+    "easy": 3,
+    "normal": 4,
+    "hard": 5
+  }
+}

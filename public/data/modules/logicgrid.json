@@ -1,0 +1,15 @@
+{
+  "engineers": ["VEGA", "OKAFOR", "REYES", "TANAKA", "MORROW", "IDRIS"],
+  "panels": ["CRIMSON", "TEAL", "AMBER", "VIOLET"],
+  "shifts": ["DAWN", "DUSK", "NIGHT", "NOON"],
+  "entitiesByDifficulty": {
+    "easy": 3,
+    "normal": 3,
+    "hard": 3
+  },
+  "questionsByDifficulty": {
+    "easy": 1,
+    "normal": 2,
+    "hard": 2
+  }
+}

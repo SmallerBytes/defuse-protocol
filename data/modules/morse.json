@@ -1,0 +1,22 @@
+{
+  "alphabet": {
+    "A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.",
+    "G": "--.", "H": "....", "I": "..", "J": ".---", "K": "-.-", "L": ".-..",
+    "M": "--", "N": "-.", "O": "---", "P": ".--.", "Q": "--.-", "R": ".-.",
+    "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-",
+    "Y": "-.--", "Z": "--.."
+  },
+  "words": [
+    "ROTOR", "EMBER", "PYLON", "VAULT", "COMET", "ANVIL",
+    "SPARK", "RELAY", "CIPHER", "QUARK", "NEXUS", "ORBIT",
+    "FLINT", "GLYPH", "WIDOW", "ZEPHYR"
+  ],
+  "tableSize": 10,
+  "baseFrequency": 3.5,
+  "frequencyStep": 0.005,
+  "wordLengthByDifficulty": {
+    "easy": [5, 5],
+    "normal": [5, 6],
+    "hard": [5, 6]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "colors": ["red", "blue", "yellow", "white", "black", "green"],
+  "wireCountsByDifficulty": {
+    "easy": [3, 4],
+    "normal": [4, 5],
+    "hard": [5, 6]
+  },
+  "rulesPerCount": {
+    "easy": 3,
+    "normal": 4,
+    "hard": 5
+  }
+}
