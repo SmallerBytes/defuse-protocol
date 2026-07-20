@@ -79,7 +79,7 @@ function fixedManual() {
     },
     // Clues live on the device now — manual only has the fixed roster.
     clues: [
-      'Ask the Defuser to read each INTERCEPTED NOTE from the clipboard on the table (tap to cycle).',
+      'Ask the Defuser to read all INTERCEPTED NOTES from the clipboard on the table.',
       'Fill the roster so each engineer has exactly one panel and one shift.',
       'Then answer the question shown on the device.'
     ]
