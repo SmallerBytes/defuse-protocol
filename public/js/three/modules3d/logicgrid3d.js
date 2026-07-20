@@ -21,24 +21,14 @@ export function build({ view, send }) {
   screen.position.set(0, 0.051, -0.0805);
   group.add(screen);
 
-  // Large popup: hidden until the Defuser presses READ NOTE
+  // Large popup: hidden until the Defuser presses READ NOTE (no 3D frame — avoids clipping slab)
   const noteTex = new CanvasTex(768, 448);
   const notePanel = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.198), displayMaterial(noteTex));
-  notePanel.position.set(0, 0.16, -0.02);
+  notePanel.position.set(0, 0.19, -0.02);
   notePanel.rotation.x = -0.12;
   notePanel.visible = false;
   notePanel.renderOrder = 2;
   group.add(notePanel);
-
-  const noteFrame = new THREE.Mesh(
-    new RoundedBoxGeometry(0.355, 0.01, 0.212, 2, 0.006),
-    new THREE.MeshStandardMaterial({ color: 0x2a3140, roughness: 0.5, metalness: 0.35 })
-  );
-  noteFrame.position.set(0, 0.155, -0.025);
-  noteFrame.rotation.x = -0.12;
-  noteFrame.visible = false;
-  noteFrame.castShadow = true;
-  group.add(noteFrame);
 
   const btnTex = new CanvasTex(256, 80);
   const btnSide = new THREE.MeshStandardMaterial({ color: 0x1e4a32, roughness: 0.5, metalness: 0.2 });
@@ -46,7 +36,6 @@ export function build({ view, send }) {
     new RoundedBoxGeometry(0.12, 0.02, 0.036, 2, 0.004),
     [btnSide, btnSide, labelMaterial(btnTex), btnSide, btnSide, btnSide]
   );
-  noteBtn.position.set(0.07, 0.01, -0.05);
   noteBtn.castShadow = true;
   noteBtn.userData.highlightTargets = [noteBtn];
   group.add(noteBtn);
@@ -68,9 +57,18 @@ export function build({ view, send }) {
     const clues = v.clues || [];
     const idx = v.clueIndex || 0;
     if (!clues.length) {
-      noteTex.draw((ctx, w, h) => drawWrapped(ctx, w, h, 'NO INTERCEPTED NOTES', {
-        color: '#9fe8bd', bg: '#06120c', size: 36
-      }));
+      noteTex.draw((ctx, w, h) => {
+        ctx.fillStyle = '#06120c';
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = '#3a6a50';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(4, 4, w - 8, h - 8);
+        ctx.font = `bold 36px 'Consolas', monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#9fe8bd';
+        ctx.fillText('NO INTERCEPTED NOTES', w / 2, h / 2);
+      });
       return;
     }
     const header = `INTERCEPTED NOTE  ${idx + 1} / ${clues.length}`;
@@ -78,14 +76,16 @@ export function build({ view, send }) {
     noteTex.draw((ctx, w, h) => {
       ctx.fillStyle = '#06120c';
       ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#3a6a50';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
       ctx.fillStyle = '#1a3a28';
-      ctx.fillRect(0, 0, w, 64);
+      ctx.fillRect(8, 8, w - 16, 56);
       ctx.font = `bold 32px 'Consolas', monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#7dcea0';
-      ctx.fillText(header, w / 2, 34);
-      // Body with room to wrap — leave top band clear
+      ctx.fillText(header, w / 2, 36);
       const pad = 24;
       const box = { x: pad, y: 80, w: w - pad * 2, h: h - 80 - pad };
       ctx.save();
@@ -134,7 +134,15 @@ export function build({ view, send }) {
   function setNoteVisible(open) {
     noteOpen = open;
     notePanel.visible = open;
-    noteFrame.visible = open;
+    if (open) {
+      // Beside the popup on the right
+      noteBtn.position.set(0.22, 0.19, -0.02);
+      noteBtn.rotation.x = -0.12;
+    } else {
+      // Right of the CRT question housing
+      noteBtn.position.set(0.155, 0.055, -0.06);
+      noteBtn.rotation.x = 0;
+    }
     btnTex.draw((ctx, w, h) => drawLabel(ctx, w, h, open ? 'NEXT ▶' : 'READ NOTE', {
       bg: open ? '#cfd6e4' : '#9fe8bd',
       font: `bold 34px 'Consolas', monospace`
@@ -152,7 +160,6 @@ export function build({ view, send }) {
       setNoteVisible(false);
       return;
     }
-    // Advance to next intercepted note (server-side index)
     send({ type: 'nextClue' });
   };
 
