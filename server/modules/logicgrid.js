@@ -1,12 +1,11 @@
 /**
- * LOGIC GRID — fixed roster in the manual. Clues are shown on the DEVICE
- * (Defuser reads them aloud). Truth assignment + which clues/questions
- * appear are randomized each game.
+ * LOGIC GRID / JOINT FUNCTIONS — fixed roster in the manual (SOS joint-function
+ * framing). Clues are on the table clipboard. Truth + questions randomize each game.
  */
 const data = require('../../data/modules/logicgrid.json');
 
 const TYPE = 'logicgrid';
-const NAME = 'Logic Grid';
+const NAME = 'Joint Functions';
 
 function permutations(arr) {
   if (arr.length <= 1) return [arr];
@@ -30,14 +29,14 @@ function clueHolds(clue, asg) {
   }
 }
 
-function clueText(clue, names, panels, shifts) {
+function clueText(clue, names, functions, phases) {
   switch (clue.kind) {
-    case 'panel': return `${names[clue.e]} maintains the ${panels[clue.p]} panel.`;
-    case 'panelNot': return `${names[clue.e]} does not maintain the ${panels[clue.p]} panel.`;
-    case 'shift': return `${names[clue.e]} works the ${shifts[clue.s]} shift.`;
-    case 'shiftNot': return `${names[clue.e]} does not work the ${shifts[clue.s]} shift.`;
-    case 'cross': return `The engineer with the ${panels[clue.p]} panel works the ${shifts[clue.s]} shift.`;
-    case 'crossNot': return `The engineer with the ${panels[clue.p]} panel does not work the ${shifts[clue.s]} shift.`;
+    case 'panel': return `${names[clue.e]} owns the ${functions[clue.p]} function.`;
+    case 'panelNot': return `${names[clue.e]} does not own the ${functions[clue.p]} function.`;
+    case 'shift': return `${names[clue.e]} leads the ${phases[clue.s]} phase.`;
+    case 'shiftNot': return `${names[clue.e]} does not lead the ${phases[clue.s]} phase.`;
+    case 'cross': return `The captain owning ${functions[clue.p]} leads the ${phases[clue.s]} phase.`;
+    case 'crossNot': return `The captain owning ${functions[clue.p]} does not lead the ${phases[clue.s]} phase.`;
     default: return '';
   }
 }
@@ -69,18 +68,23 @@ function randomTrueClue(rng, truth, n) {
 }
 
 function fixedManual() {
+  const labels = data.labels || {
+    engineers: 'Captains',
+    panels: 'Joint Functions',
+    shifts: 'Phases'
+  };
   return {
     intro: data.intro,
     rosterNote: data.rosterNote,
+    labels,
     entities: {
       engineers: data.engineers,
       panels: data.panels,
       shifts: data.shifts
     },
-    // Clues live on the device now — manual only has the fixed roster.
     clues: [
       'Ask the Defuser to read all INTERCEPTED NOTES from the clipboard on the table.',
-      'Fill the roster so each engineer has exactly one panel and one shift.',
+      'Assign each captain exactly one joint function and one phase.',
       'Then answer the question shown on the device.'
     ]
   };
@@ -89,10 +93,9 @@ function fixedManual() {
 function generate(ctx) {
   const { rng, difficulty } = ctx;
   const n = data.entitiesByDifficulty[difficulty];
-  // Fixed roster every game (manual can be printed once).
   const names = data.engineers.slice(0, n);
-  const panels = data.panels.slice(0, n);
-  const shifts = data.shifts.slice(0, n);
+  const functions = data.panels.slice(0, n);
+  const phases = data.shifts.slice(0, n);
 
   const idx = Array.from({ length: n }, (_, i) => i);
   const truth = { panels: rng.shuffle(idx), shifts: rng.shuffle(idx) };
@@ -113,7 +116,7 @@ function generate(ctx) {
     }
   }
 
-  const clueLines = rng.shuffle(clues).map((c) => clueText(c, names, panels, shifts));
+  const clueLines = rng.shuffle(clues).map((c) => clueText(c, names, functions, phases));
 
   const questionCount = data.questionsByDifficulty[difficulty];
   const questions = [];
@@ -123,15 +126,15 @@ function generate(ctx) {
     if (t === 'panelOf') {
       const e = rng.int(0, n - 1);
       questions.push({
-        text: `Which panel does ${names[e]} maintain?`,
-        options: panels,
-        answer: panels[truth.panels[e]]
+        text: `Which joint function does ${names[e]} own?`,
+        options: functions,
+        answer: functions[truth.panels[e]]
       });
     } else {
       const s = rng.int(0, n - 1);
       const e = truth.shifts.indexOf(s);
       questions.push({
-        text: `Which engineer works the ${shifts[s]} shift?`,
+        text: `Which captain leads the ${phases[s]} phase?`,
         options: names,
         answer: names[e]
       });
@@ -155,7 +158,6 @@ function view(state) {
     totalStages: state.questions.length,
     question: q ? q.text : null,
     options: q ? q.options : [],
-    // Defuser reads these aloud — they are NOT in the printed manual.
     clues: state.clues,
     clueIndex: state.clueIndex
   };

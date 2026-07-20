@@ -1,7 +1,12 @@
 {
-  "engineers": ["VEGA", "OKAFOR", "REYES"],
-  "panels": ["CRIMSON", "TEAL", "AMBER"],
-  "shifts": ["DAWN", "DUSK", "NIGHT"],
+  "engineers": ["HALE", "ORTEGA", "PARK"],
+  "panels": ["C2", "FIRES", "INTEL"],
+  "shifts": ["PLAN", "EXECUTE", "ASSESS"],
+  "labels": {
+    "engineers": "Captains",
+    "panels": "Joint Functions",
+    "shifts": "Phases"
+  },
   "entitiesByDifficulty": {
     "easy": 3,
     "normal": 3,
@@ -12,6 +17,6 @@
     "normal": 2,
     "hard": 2
   },
-  "intro": "Three engineers each maintain one panel and work one shift (no two share either). The Defuser reads intercepted notes from a clipboard on the table, then answers the question on the device. Use those notes with the roster below to fill the assignment.",
+  "intro": "Three captains each own one joint function and lead one planning phase (no two share either). This roster mirrors joint-function thinking used in Squadron Officer School. The Defuser reads intercepted notes from the clipboard on the table, then answers the question on the device.",
   "rosterNote": "Roster is always the same. Only the intercepted notes and the device question change between games."
 }

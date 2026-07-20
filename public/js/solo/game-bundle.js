@@ -561,9 +561,14 @@ var require_morse2 = __commonJS({
 var require_logicgrid = __commonJS({
   "data/modules/logicgrid.json"(exports, module) {
     module.exports = {
-      engineers: ["VEGA", "OKAFOR", "REYES"],
-      panels: ["CRIMSON", "TEAL", "AMBER"],
-      shifts: ["DAWN", "DUSK", "NIGHT"],
+      engineers: ["HALE", "ORTEGA", "PARK"],
+      panels: ["C2", "FIRES", "INTEL"],
+      shifts: ["PLAN", "EXECUTE", "ASSESS"],
+      labels: {
+        engineers: "Captains",
+        panels: "Joint Functions",
+        shifts: "Phases"
+      },
       entitiesByDifficulty: {
         easy: 3,
         normal: 3,
@@ -574,7 +579,7 @@ var require_logicgrid = __commonJS({
         normal: 2,
         hard: 2
       },
-      intro: "Three engineers each maintain one panel and work one shift (no two share either). The Defuser reads intercepted notes from a clipboard on the table, then answers the question on the device. Use those notes with the roster below to fill the assignment.",
+      intro: "Three captains each own one joint function and lead one planning phase (no two share either). This roster mirrors joint-function thinking used in Squadron Officer School. The Defuser reads intercepted notes from the clipboard on the table, then answers the question on the device.",
       rosterNote: "Roster is always the same. Only the intercepted notes and the device question change between games."
     };
   }
@@ -585,7 +590,7 @@ var require_logicgrid2 = __commonJS({
   "server/modules/logicgrid.js"(exports, module) {
     var data = require_logicgrid();
     var TYPE = "logicgrid";
-    var NAME = "Logic Grid";
+    var NAME = "Joint Functions";
     function permutations(arr) {
       if (arr.length <= 1) return [arr];
       const out = [];
@@ -613,20 +618,20 @@ var require_logicgrid2 = __commonJS({
           return true;
       }
     }
-    function clueText(clue, names, panels, shifts) {
+    function clueText(clue, names, functions, phases) {
       switch (clue.kind) {
         case "panel":
-          return `${names[clue.e]} maintains the ${panels[clue.p]} panel.`;
+          return `${names[clue.e]} owns the ${functions[clue.p]} function.`;
         case "panelNot":
-          return `${names[clue.e]} does not maintain the ${panels[clue.p]} panel.`;
+          return `${names[clue.e]} does not own the ${functions[clue.p]} function.`;
         case "shift":
-          return `${names[clue.e]} works the ${shifts[clue.s]} shift.`;
+          return `${names[clue.e]} leads the ${phases[clue.s]} phase.`;
         case "shiftNot":
-          return `${names[clue.e]} does not work the ${shifts[clue.s]} shift.`;
+          return `${names[clue.e]} does not lead the ${phases[clue.s]} phase.`;
         case "cross":
-          return `The engineer with the ${panels[clue.p]} panel works the ${shifts[clue.s]} shift.`;
+          return `The captain owning ${functions[clue.p]} leads the ${phases[clue.s]} phase.`;
         case "crossNot":
-          return `The engineer with the ${panels[clue.p]} panel does not work the ${shifts[clue.s]} shift.`;
+          return `The captain owning ${functions[clue.p]} does not lead the ${phases[clue.s]} phase.`;
         default:
           return "";
       }
@@ -668,18 +673,23 @@ var require_logicgrid2 = __commonJS({
       }
     }
     function fixedManual() {
+      const labels = data.labels || {
+        engineers: "Captains",
+        panels: "Joint Functions",
+        shifts: "Phases"
+      };
       return {
         intro: data.intro,
         rosterNote: data.rosterNote,
+        labels,
         entities: {
           engineers: data.engineers,
           panels: data.panels,
           shifts: data.shifts
         },
-        // Clues live on the device now — manual only has the fixed roster.
         clues: [
           "Ask the Defuser to read all INTERCEPTED NOTES from the clipboard on the table.",
-          "Fill the roster so each engineer has exactly one panel and one shift.",
+          "Assign each captain exactly one joint function and one phase.",
           "Then answer the question shown on the device."
         ]
       };
@@ -688,8 +698,8 @@ var require_logicgrid2 = __commonJS({
       const { rng, difficulty } = ctx;
       const n = data.entitiesByDifficulty[difficulty];
       const names = data.engineers.slice(0, n);
-      const panels = data.panels.slice(0, n);
-      const shifts = data.shifts.slice(0, n);
+      const functions = data.panels.slice(0, n);
+      const phases = data.shifts.slice(0, n);
       const idx = Array.from({ length: n }, (_, i) => i);
       const truth = { panels: rng.shuffle(idx), shifts: rng.shuffle(idx) };
       const allCandidates = [];
@@ -707,7 +717,7 @@ var require_logicgrid2 = __commonJS({
           candidates = filtered;
         }
       }
-      const clueLines = rng.shuffle(clues).map((c) => clueText(c, names, panels, shifts));
+      const clueLines = rng.shuffle(clues).map((c) => clueText(c, names, functions, phases));
       const questionCount = data.questionsByDifficulty[difficulty];
       const questions = [];
       const qTypes = rng.shuffle(["panelOf", "engineerOfShift"]);
@@ -716,15 +726,15 @@ var require_logicgrid2 = __commonJS({
         if (t === "panelOf") {
           const e = rng.int(0, n - 1);
           questions.push({
-            text: `Which panel does ${names[e]} maintain?`,
-            options: panels,
-            answer: panels[truth.panels[e]]
+            text: `Which joint function does ${names[e]} own?`,
+            options: functions,
+            answer: functions[truth.panels[e]]
           });
         } else {
           const s = rng.int(0, n - 1);
           const e = truth.shifts.indexOf(s);
           questions.push({
-            text: `Which engineer works the ${shifts[s]} shift?`,
+            text: `Which captain leads the ${phases[s]} phase?`,
             options: names,
             answer: names[e]
           });
@@ -745,7 +755,6 @@ var require_logicgrid2 = __commonJS({
         totalStages: state.questions.length,
         question: q ? q.text : null,
         options: q ? q.options : [],
-        // Defuser reads these aloud — they are NOT in the printed manual.
         clues: state.clues,
         clueIndex: state.clueIndex
       };

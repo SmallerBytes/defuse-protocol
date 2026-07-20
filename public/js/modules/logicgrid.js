@@ -1,12 +1,17 @@
-/** Logic Grid — Expert manual renderer (fixed roster; clues are on the device). */
+/** Joint Functions — Expert manual renderer (fixed SOS roster; clues on clipboard). */
 export const logicgrid = {
   renderManual(el, manual) {
     const e = manual.entities;
+    const labels = manual.labels || {
+      engineers: 'Captains',
+      panels: 'Joint Functions',
+      shifts: 'Phases'
+    };
     let html = `<p class="manual-intro">${manual.intro}</p>`;
     if (manual.rosterNote) {
       html += `<p class="manual-intro"><em>${manual.rosterNote}</em></p>`;
     }
-    html += `<h3>Roster</h3><table class="manual-table"><tr><th>Engineers</th><th>Panels</th><th>Shifts</th></tr>`;
+    html += `<h3>Roster</h3><table class="manual-table"><tr><th>${labels.engineers}</th><th>${labels.panels}</th><th>${labels.shifts}</th></tr>`;
     for (let i = 0; i < e.engineers.length; i++) {
       html += `<tr><td>${e.engineers[i]}</td><td>${e.panels[i]}</td><td>${e.shifts[i]}</td></tr>`;
     }

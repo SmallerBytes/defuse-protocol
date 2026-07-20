@@ -65,7 +65,7 @@ The Node server under `server/` is optional legacy multiplayer code for local de
 | Symbol Matching | 4 random glyphs from one column                             | Fixed 6 symbol columns                              |
 | Memory Sequence | Random displays + shuffled labels                           | Fixed per-stage lookup rules                       |
 | Morse Code      | Random word flashed in Morse                                | Fixed alphabet + word→frequency table              |
-| Logic Grid      | Intercepted notes + question (read notes aloud)             | Fixed roster; notes are on the device              |
+| Joint Functions | Captains × functions × phases (SOS)                        | Fixed roster; notes on table clipboard             |
 
 The **manual is permanent**. Only the bomb layout is random each game (replayable via seed).
 

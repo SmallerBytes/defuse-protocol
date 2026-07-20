@@ -1,4 +1,4 @@
-/** Logic Grid — CRT question + table clipboard (all notes, high-contrast) + answer bars. */
+/** Joint Functions — CRT question + table clipboard (all notes) + answer bars. */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { CanvasTex, displayMaterial, labelMaterial, drawWrapped, drawLabel } from '../textUtil.js';
@@ -19,14 +19,14 @@ export function build({ view, send }) {
   screen.position.set(0, 0.051, -0.0805);
   group.add(screen);
 
-  /* ---- Clipboard always on the table; shows every intercepted note ---- */
+  /* ---- Clipboard clear of the bomb (front-right table edge) ---- */
   const clipboard = new THREE.Group();
   clipboard.name = 'logicgrid-clipboard';
-  clipboard.position.set(0.62, 0.005, 0.55);
-  clipboard.rotation.y = -0.35;
+  clipboard.position.set(1.05, 0.005, 0.72);
+  clipboard.rotation.y = -0.45;
 
   const boardMat = new THREE.MeshStandardMaterial({ color: 0x2c2418, roughness: 0.75, metalness: 0.08 });
-  const board = new THREE.Mesh(new RoundedBoxGeometry(0.30, 0.01, 0.42, 2, 0.006), boardMat);
+  const board = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.01, 0.44, 2, 0.006), boardMat);
   board.position.y = 0.005;
   board.castShadow = true;
   board.receiveShadow = true;
@@ -34,24 +34,22 @@ export function build({ view, send }) {
 
   const clipMat = new THREE.MeshStandardMaterial({ color: 0x9aa3b0, roughness: 0.35, metalness: 0.85 });
   const clipBase = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.014, 0.038), clipMat);
-  clipBase.position.set(0, 0.018, -0.185);
+  clipBase.position.set(0, 0.018, -0.195);
   clipBase.castShadow = true;
   clipboard.add(clipBase);
   const clipArm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.007, 0.048), clipMat);
-  clipArm.position.set(0, 0.026, -0.158);
+  clipArm.position.set(0, 0.026, -0.168);
   clipArm.rotation.x = 0.12;
   clipboard.add(clipArm);
 
-  // Higher-res paper; MeshBasicMaterial so scene lights don't wash out black text
   const noteTex = new CanvasTex(1024, 1408);
   const paperMat = new THREE.MeshBasicMaterial({
     map: noteTex.texture,
     toneMapped: false
   });
-  const paper = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.36), paperMat);
+  const paper = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.38), paperMat);
   paper.rotation.x = -Math.PI / 2;
-  // Sit fully under the clip (top of paper below clip arm)
-  paper.position.set(0, 0.012, 0.02);
+  paper.position.set(0, 0.012, 0.025);
   clipboard.add(paper);
 
   const barGeo = new RoundedBoxGeometry(0.24, 0.022, 0.038, 2, 0.006);
@@ -87,50 +85,50 @@ export function build({ view, send }) {
   function paintNote(v) {
     const clues = v.clues || [];
     noteTex.draw((ctx, w, h) => {
-      // Bright white paper for max contrast
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
 
+      // Leave room under the metal clip; start content lower on the page
+      const headerY = 160;
       ctx.fillStyle = '#000000';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = `bold 40px 'Consolas', monospace`;
-      ctx.fillText('INTERCEPTED NOTES', w / 2, 48);
+      ctx.font = `bold 48px 'Consolas', monospace`;
+      ctx.fillText('INTERCEPTED NOTES', w / 2, headerY);
 
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(48, 72);
-      ctx.lineTo(w - 48, 72);
+      ctx.moveTo(56, headerY + 36);
+      ctx.lineTo(w - 56, headerY + 36);
       ctx.stroke();
 
       if (!clues.length) {
-        ctx.font = `bold 36px 'Consolas', monospace`;
+        ctx.font = `bold 44px 'Consolas', monospace`;
         ctx.fillText('NO INTERCEPTED NOTES', w / 2, h / 2);
         return;
       }
 
-      // Fit all clues: shrink type if the list is long
-      let bodySize = 34;
-      let lineH = bodySize * 1.35;
-      const left = 56;
+      let bodySize = 48;
+      let lineH = bodySize * 1.4;
+      const left = 64;
       const maxW = w - left * 2;
-      const top = 100;
-      const bottom = h - 36;
+      const top = headerY + 64;
+      const bottom = h - 48;
       const available = bottom - top;
 
       const layout = () => {
         ctx.font = `bold ${bodySize}px 'Consolas', monospace`;
         const blocks = clues.map((c, i) => wrapLines(ctx, `${i + 1}. ${c}`, maxW));
         let total = 0;
-        for (const lines of blocks) total += lines.length * lineH + bodySize * 0.35;
+        for (const lines of blocks) total += lines.length * lineH + bodySize * 0.45;
         return { blocks, total };
       };
 
       let { blocks, total } = layout();
-      while (total > available && bodySize > 22) {
+      while (total > available && bodySize > 28) {
         bodySize -= 2;
-        lineH = bodySize * 1.35;
+        lineH = bodySize * 1.4;
         ({ blocks, total } = layout());
       }
 
@@ -144,7 +142,7 @@ export function build({ view, send }) {
           ctx.fillText(line, left, y);
           y += lineH;
         }
-        y += bodySize * 0.35;
+        y += bodySize * 0.45;
       });
     });
   }
