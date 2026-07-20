@@ -574,7 +574,7 @@ var require_logicgrid = __commonJS({
         normal: 2,
         hard: 2
       },
-      intro: "Three engineers each maintain one panel and work one shift (no two share either). The Defuser will read the intercepted notes aloud from the module screen. Use those notes with the roster below to fill the assignment, then answer the question the Defuser sees on the device.",
+      intro: "Three engineers each maintain one panel and work one shift (no two share either). The Defuser presses READ NOTE on the module to open each intercepted note, then reads them aloud. Use those notes with the roster below to fill the assignment, then answer the question the Defuser sees on the device.",
       rosterNote: "Roster is always the same. Only the intercepted notes and the device question change between games."
     };
   }
@@ -678,7 +678,7 @@ var require_logicgrid2 = __commonJS({
         },
         // Clues live on the device now — manual only has the fixed roster.
         clues: [
-          "Ask the Defuser to read the INTERCEPTED NOTES from the module screen.",
+          "Ask the Defuser to press READ NOTE on the module and read each INTERCEPTED NOTE aloud.",
           "Fill the roster so each engineer has exactly one panel and one shift.",
           "Then answer the question shown on the device."
         ]

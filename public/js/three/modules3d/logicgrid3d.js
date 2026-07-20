@@ -1,10 +1,12 @@
-/** Logic Grid — CRT question screen + clue reader + answer bars. */
+/** Logic Grid — CRT question + READ NOTE popup + answer bars. */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { CanvasTex, displayMaterial, labelMaterial, drawWrapped, drawLabel } from '../textUtil.js';
 
 export function build({ view, send }) {
   const group = new THREE.Group();
+  let noteOpen = false;
+  let lastView = view;
 
   const housing = new THREE.Mesh(new RoundedBoxGeometry(0.27, 0.05, 0.105, 3, 0.01),
     new THREE.MeshStandardMaterial({ color: 0x1d2129, roughness: 0.45, metalness: 0.35 }));
@@ -19,25 +21,35 @@ export function build({ view, send }) {
   screen.position.set(0, 0.051, -0.0805);
   group.add(screen);
 
-  // Clue readout (Defuser reads these aloud to Experts)
-  const clueTex = new CanvasTex(640, 160);
-  const clueScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.048), displayMaterial(clueTex));
-  clueScreen.rotation.x = -Math.PI / 2;
-  clueScreen.position.set(0, 0.028, -0.02);
-  group.add(clueScreen);
+  // Large popup: hidden until the Defuser presses READ NOTE
+  const noteTex = new CanvasTex(768, 448);
+  const notePanel = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.198), displayMaterial(noteTex));
+  notePanel.position.set(0, 0.16, -0.02);
+  notePanel.rotation.x = -0.12;
+  notePanel.visible = false;
+  notePanel.renderOrder = 2;
+  group.add(notePanel);
 
-  const nextTex = new CanvasTex(160, 64);
-  nextTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'NOTE ▶', { bg: '#cfd6e4', font: `bold 36px 'Consolas', monospace` }));
-  const nextSide = new THREE.MeshStandardMaterial({ color: 0x32384a, roughness: 0.55, metalness: 0.2 });
-  const nextBtn = new THREE.Mesh(
-    new RoundedBoxGeometry(0.08, 0.018, 0.032, 2, 0.004),
-    [nextSide, nextSide, labelMaterial(nextTex), nextSide, nextSide, nextSide]
+  const noteFrame = new THREE.Mesh(
+    new RoundedBoxGeometry(0.355, 0.01, 0.212, 2, 0.006),
+    new THREE.MeshStandardMaterial({ color: 0x2a3140, roughness: 0.5, metalness: 0.35 })
   );
-  nextBtn.position.set(0.09, 0.009, -0.055);
-  nextBtn.castShadow = true;
-  nextBtn.userData.onClick = () => send({ type: 'nextClue' });
-  nextBtn.userData.highlightTargets = [nextBtn];
-  group.add(nextBtn);
+  noteFrame.position.set(0, 0.155, -0.025);
+  noteFrame.rotation.x = -0.12;
+  noteFrame.visible = false;
+  noteFrame.castShadow = true;
+  group.add(noteFrame);
+
+  const btnTex = new CanvasTex(256, 80);
+  const btnSide = new THREE.MeshStandardMaterial({ color: 0x1e4a32, roughness: 0.5, metalness: 0.2 });
+  const noteBtn = new THREE.Mesh(
+    new RoundedBoxGeometry(0.12, 0.02, 0.036, 2, 0.004),
+    [btnSide, btnSide, labelMaterial(btnTex), btnSide, btnSide, btnSide]
+  );
+  noteBtn.position.set(0.07, 0.01, -0.05);
+  noteBtn.castShadow = true;
+  noteBtn.userData.highlightTargets = [noteBtn];
+  group.add(noteBtn);
 
   const barGeo = new RoundedBoxGeometry(0.24, 0.022, 0.038, 2, 0.006);
   const bars = [];
@@ -52,15 +64,102 @@ export function build({ view, send }) {
     bars.push({ bar, tex, option: null });
   }
 
-  function update(v) {
-    qTex.draw((ctx, w, h) => drawWrapped(ctx, w, h, v.question || 'STANDBY', { size: 36 }));
-
+  function paintNote(v) {
     const clues = v.clues || [];
     const idx = v.clueIndex || 0;
-    const line = clues.length
-      ? `NOTE ${idx + 1}/${clues.length}: ${clues[idx]}`
-      : 'NO INTERCEPTED NOTES';
-    clueTex.draw((ctx, w, h) => drawWrapped(ctx, w, h, line, { color: '#9fe8bd', bg: '#06120c', size: 28 }));
+    if (!clues.length) {
+      noteTex.draw((ctx, w, h) => drawWrapped(ctx, w, h, 'NO INTERCEPTED NOTES', {
+        color: '#9fe8bd', bg: '#06120c', size: 36
+      }));
+      return;
+    }
+    const header = `INTERCEPTED NOTE  ${idx + 1} / ${clues.length}`;
+    const body = clues[idx];
+    noteTex.draw((ctx, w, h) => {
+      ctx.fillStyle = '#06120c';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#1a3a28';
+      ctx.fillRect(0, 0, w, 64);
+      ctx.font = `bold 32px 'Consolas', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#7dcea0';
+      ctx.fillText(header, w / 2, 34);
+      // Body with room to wrap — leave top band clear
+      const pad = 24;
+      const box = { x: pad, y: 80, w: w - pad * 2, h: h - 80 - pad };
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(box.x, box.y, box.w, box.h);
+      ctx.clip();
+      drawWrappedInBox(ctx, box, body, { color: '#c8f5d8', size: 40 });
+      ctx.restore();
+      ctx.font = `bold 22px 'Consolas', monospace`;
+      ctx.fillStyle = '#5a8a70';
+      ctx.fillText(clues.length > 1 ? 'PRESS AGAIN FOR NEXT NOTE' : 'PRESS AGAIN TO CLOSE', w / 2, h - 22);
+    });
+  }
+
+  function drawWrappedInBox(ctx, box, text, { color, size }) {
+    let fontSize = size;
+    const words = String(text).split(' ');
+    for (let attempt = 0; attempt < 6; attempt++) {
+      ctx.font = `bold ${fontSize}px 'Consolas', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = color;
+      const lines = [];
+      let line = '';
+      for (const word of words) {
+        const tryLine = line ? `${line} ${word}` : word;
+        if (ctx.measureText(tryLine).width > box.w && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = tryLine;
+        }
+      }
+      if (line) lines.push(line);
+      const lineH = fontSize * 1.3;
+      const totalH = lines.length * lineH;
+      if (totalH <= box.h || fontSize <= 24) {
+        const y0 = box.y + box.h / 2 - ((lines.length - 1) * lineH) / 2;
+        lines.forEach((l, i) => ctx.fillText(l, box.x + box.w / 2, y0 + i * lineH));
+        return;
+      }
+      fontSize -= 4;
+    }
+  }
+
+  function setNoteVisible(open) {
+    noteOpen = open;
+    notePanel.visible = open;
+    noteFrame.visible = open;
+    btnTex.draw((ctx, w, h) => drawLabel(ctx, w, h, open ? 'NEXT ▶' : 'READ NOTE', {
+      bg: open ? '#cfd6e4' : '#9fe8bd',
+      font: `bold 34px 'Consolas', monospace`
+    }));
+  }
+
+  noteBtn.userData.onClick = () => {
+    if (!noteOpen) {
+      paintNote(lastView);
+      setNoteVisible(true);
+      return;
+    }
+    const clues = lastView.clues || [];
+    if (clues.length <= 1) {
+      setNoteVisible(false);
+      return;
+    }
+    // Advance to next intercepted note (server-side index)
+    send({ type: 'nextClue' });
+  };
+
+  function update(v) {
+    lastView = v;
+    qTex.draw((ctx, w, h) => drawWrapped(ctx, w, h, v.question || 'STANDBY', { size: 36 }));
+    if (noteOpen) paintNote(v);
 
     bars.forEach((b, i) => {
       const option = v.options[i] || null;
@@ -75,6 +174,7 @@ export function build({ view, send }) {
     });
   }
 
+  setNoteVisible(false);
   update(view);
   return { group, update };
 }
