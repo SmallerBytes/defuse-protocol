@@ -154,6 +154,8 @@ export class Device {
     if (builder) {
       builder.group.position.y = PLATE_H;
       bay.add(builder.group);
+      // Optional prop seated on the table (e.g. Logic Grid clipboard), not in the bay
+      if (builder.tableProp) this.group.add(builder.tableProp);
     }
 
     this.group.add(bay);
