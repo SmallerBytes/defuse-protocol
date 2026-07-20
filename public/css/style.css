@@ -83,9 +83,14 @@ body {
 .btn.ghost { background: transparent; color: var(--muted); border-color: transparent; margin-top: 12px; width: 100%; }
 .btn.active-role { background: var(--accent); color: #06251a; border-color: var(--accent); }
 
+.home-actions { display: flex; flex-direction: column; gap: 12px; }
+.home-actions .primary { width: 100%; }
 .home-actions .ghost {
   display: block; text-align: center; text-decoration: none;
-  margin-top: 4px; border: 1px dashed var(--line);
+  margin-top: 0; border: 1px dashed var(--line);
+}
+.home-actions button:disabled {
+  opacity: 0.45; cursor: not-allowed;
 }
 .join-row { display: flex; gap: 8px; }
 .join-row input { text-transform: uppercase; letter-spacing: 0.3em; flex: 1; }
@@ -161,19 +166,13 @@ body {
   flex-direction: column;
   gap: 12px;
 }
-#game-split #expert-area:not(.hidden) + #defuser-area,
-#game-split #defuser-area:not(.hidden) ~ #expert-area:not(.hidden) {
-  /* solo mode shows both */
+#game-split:has(#defuser-area:not(.hidden)):has(#expert-area:not(.hidden)) {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  align-items: start;
 }
-@media (min-width: 1000px) {
-  #game-split:has(#defuser-area:not(.hidden)):has(#expert-area:not(.hidden)) {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    align-items: start;
-  }
-  #game-split:has(#defuser-area:not(.hidden)):has(#expert-area:not(.hidden)) #scene-container {
-    height: calc(100vh - 160px);
-  }
+#game-split:has(#defuser-area:not(.hidden)):has(#expert-area:not(.hidden)) #scene-container {
+  height: calc(100vh - 160px);
 }
 .btn-vr {
   background: #1a3a2a !important;

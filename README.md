@@ -1,6 +1,6 @@
 # DEFUSE PROTOCOL
 
-A cooperative multiplayer puzzle game about talking fast under pressure.
+A cooperative bomb-defusal puzzle about talking fast under pressure — **solo VR defuser in the headset**, teammates on the fixed Field Manual.
 
 One player — the **Defuser** — sits in front of a **fully 3D bomb device** on a
 table in a dimly lit room: a metal case with protruding module faceplates, real
@@ -17,7 +17,7 @@ and camera shake + light pulses on strikes. Drag to orbit, scroll to zoom.
 
 **Quest 2 / 3:** immersive WebXR is supported in Meta Quest Browser over HTTPS.
 See **[docs/QUEST.md](docs/QUEST.md)** for the full “How to test on Quest 2” guide.
-Short version: open the GitHub Pages URL → **VR SOLO DEMO** → **ENTER VR**.
+Short version: open the GitHub Pages URL → choose **difficulty** → **START IN VR**.
 
 ## Quick Start
 
@@ -26,19 +26,20 @@ npm install
 npm start          # http://localhost:3210  (auto-picks next free port if busy)
 ```
 
-### Desktop multiplayer
+### Play (browser / Quest)
 
-1. Open the URL in a browser, enter a codename, and **CREATE ROOM**.
-2. Friends open the same URL (other tabs work for testing) and **JOIN** with the 4-letter room code.
-3. Pick roles in the lobby — exactly one Defuser, any number of Experts.
-4. The host chooses a difficulty (and optionally a seed for replays) and arms the device.
-5. Talk. Fast. Defusers can tap **ENTER VR (QUEST)** when WebXR is available.
+1. Open the app URL (local `npm start` or GitHub Pages).
+2. On the **home screen**, pick **difficulty**, optional **seed**, and **video quality** — do this **before** entering VR.
+3. **START IN VR (QUEST)** on the headset, or **START ON SCREEN** on desktop (use **ENTER VR** when ready).
+4. Teammates open **[Field Manual](public/manual.html)** on another device (print/PDF once; rules never change).
 
-### Quest solo (static HTTPS)
+The Node server under `server/` is optional legacy multiplayer code for local dev; the shipped client is **solo-only** and runs fully from static files.
 
-1. Deploy `public/` to GitHub Pages (this repo does that automatically).
+### GitHub Pages (Quest)
+
+1. Deploy `public/` to GitHub Pages (this repo can do that automatically).
 2. On the headset: `https://SmallerBytes.github.io/defuse-protocol/`
-3. **VR SOLO DEMO (QUEST)** → **ENTER VR (QUEST)**
+3. Choose difficulty → **START IN VR (QUEST)**
 
 > `file://` and plain HTTP will not start WebXR.
 
@@ -95,7 +96,7 @@ KTNE/
 │   ├── index.html        # Single-page client (all screens, Three.js import map)
 │   ├── css/style.css     # Dark industrial theme, responsive
 │   └── js/
-│       ├── main.js       # Screens, socket wiring, HUD
+│       ├── main.js       # Home setup, solo game, HUD, VR
 │       ├── sound.js      # WebAudio-synthesized SFX (no asset files)
 │       ├── modules/      # Expert manual page renderers
 │       └── three/        # 3D scene: room, lights, post FX, device, module geometry

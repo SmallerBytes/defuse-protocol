@@ -1,7 +1,7 @@
 {
   "name": "defuse-protocol",
   "version": "1.0.0",
-  "description": "Cooperative multiplayer puzzle game: one Defuser, many Experts, one ticking device.",
+  "description": "Solo VR bomb defusal: Defuser in headset, teammates on the fixed Field Manual.",
   "main": "server/index.js",
   "type": "commonjs",
   "scripts": {

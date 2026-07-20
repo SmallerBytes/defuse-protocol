@@ -13,8 +13,8 @@ const noopLog = { log() {} };
  * @returns {{ game, payload, handleAction, destroy }}
  */
 export function startSoloGame({
-  difficulty = 'easy',
-  seed = 'QUEST-DEMO-1',
+  difficulty = 'normal',
+  seed,
   onTick,
   onStrike,
   onModuleUpdate,

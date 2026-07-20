@@ -11,76 +11,48 @@
   <section id="screen-home" class="screen active">
     <div class="home-card">
       <h1 class="logo">DEFUSE<span>PROTOCOL</span></h1>
-      <p class="tagline">One of you sees the device. The rest hold the manual. Talk fast.</p>
+      <p class="tagline">You defuse in VR. Your team holds the manual. Talk fast.</p>
       <p id="xr-status" class="xr-status">Checking WebXR…</p>
 
       <label class="field">
-        <span>CODENAME</span>
-        <input id="input-name" maxlength="20" placeholder="e.g. WRENCH" autocomplete="off" />
+        <span>DIFFICULTY</span>
+        <select id="select-difficulty">
+          <option value="easy">EASY — 3 modules · 6:00 · 3 strikes</option>
+          <option value="normal" selected>NORMAL — 5 modules · 5:00 · 3 strikes</option>
+          <option value="hard">HARD — 5 modules · 3:30 · 2 strikes</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>SEED (optional, for replays)</span>
+        <input id="input-seed" placeholder="random each run" autocomplete="off" />
+      </label>
+
+      <label class="field">
+        <span>VIDEO QUALITY (Quest: use LOW or MEDIUM)</span>
+        <select id="select-quality">
+          <option value="low">LOW</option>
+          <option value="medium" selected>MEDIUM</option>
+          <option value="high">HIGH</option>
+        </select>
       </label>
 
       <div class="home-actions">
-        <button id="btn-solo-vr" class="btn primary">VR SOLO DEMO (QUEST)</button>
-        <button id="btn-create" class="btn">CREATE ROOM</button>
-        <div class="join-row">
-          <input id="input-code" maxlength="4" placeholder="CODE" autocomplete="off" />
-          <button id="btn-join" class="btn">JOIN</button>
-        </div>
+        <button id="btn-start-vr" class="btn primary">START IN VR (QUEST)</button>
+        <button id="btn-start" class="btn">START ON SCREEN</button>
         <a class="btn ghost" href="manual.html" target="_blank" rel="noopener">OPEN FIELD MANUAL (PRINT / PDF)</a>
       </div>
 
       <div id="home-error" class="error-text"></div>
       <p class="hint controls-hint">
-        <strong>Experts:</strong> open the <a href="manual.html" target="_blank" rel="noopener">Field Manual</a> —
-        it never changes. Print it or Save as PDF once. Only the bomb is random each game.<br/>
-        <strong>Quest VR:</strong> Trigger = interact · Left stick = move · Right stick L/R = snap turn 30° ·
-        HTTPS required.
+        Teammates open the <a href="manual.html" target="_blank" rel="noopener">Field Manual</a> on a phone or laptop — not in the headset.
+        Trigger = interact · Left stick = move · Right stick = snap turn · HTTPS required for VR.
       </p>
 
       <div id="stats-panel" class="stats-panel hidden">
-        <h3>FIELD RECORD</h3>
+        <h3>YOUR RECORD</h3>
         <div id="stats-grid" class="stats-grid"></div>
       </div>
-    </div>
-  </section>
-
-  <!-- ============ LOBBY ============ -->
-  <section id="screen-lobby" class="screen">
-    <div class="lobby-card">
-      <h2>STAGING AREA</h2>
-      <div class="room-code-row">
-        <span>ROOM CODE</span>
-        <strong id="lobby-code" class="room-code">----</strong>
-      </div>
-
-      <ul id="player-list" class="player-list"></ul>
-
-      <div class="role-row">
-        <span>YOUR ROLE</span>
-        <div class="role-toggle">
-          <button id="btn-role-defuser" class="btn small">DEFUSER</button>
-          <button id="btn-role-expert" class="btn small">EXPERT</button>
-        </div>
-      </div>
-
-      <div id="host-controls" class="host-controls hidden">
-        <label class="field">
-          <span>DIFFICULTY</span>
-          <select id="select-difficulty">
-            <option value="easy">EASY — 3 modules · 6:00 · 3 strikes</option>
-            <option value="normal" selected>NORMAL — 5 modules · 5:00 · 3 strikes</option>
-            <option value="hard">HARD — 5 modules · 3:30 · 2 strikes</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>SEED (optional, for replays)</span>
-          <input id="input-seed" placeholder="random" autocomplete="off" />
-        </label>
-        <button id="btn-start" class="btn primary">ARM THE DEVICE</button>
-      </div>
-      <p id="lobby-hint" class="hint"></p>
-      <div id="lobby-error" class="error-text"></div>
-      <button id="btn-leave" class="btn ghost">LEAVE ROOM</button>
     </div>
   </section>
 
@@ -103,33 +75,15 @@
         <span class="hud-label">SEED</span>
         <span id="hud-seed" class="hud-seed">—</span>
       </div>
-      <div class="hud-block hud-right hidden" id="hud-quality">
-        <span class="hud-label">VIDEO</span>
-        <select id="select-quality" class="hud-select">
-          <option value="low">LOW</option>
-          <option value="medium">MEDIUM</option>
-          <option value="high">HIGH</option>
-        </select>
-      </div>
-      <div class="hud-block hidden" id="hud-vr">
+      <div class="hud-block hud-right" id="hud-vr">
         <span class="hud-label">VR</span>
-        <button id="btn-enter-vr" class="btn small btn-vr">ENTER VR (QUEST)</button>
+        <button id="btn-enter-vr" class="btn small btn-vr">ENTER VR</button>
       </div>
     </header>
 
-    <div id="game-split">
-      <!-- Defuser: the device (full 3D scene) -->
-      <div id="defuser-area" class="hidden">
-        <div id="scene-container"></div>
-        <div id="scene-hint" class="scene-hint">DRAG to orbit · SCROLL to zoom · CLICK components to interact</div>
-      </div>
-
-      <!-- Expert: the manual -->
-      <div id="expert-area" class="hidden">
-        <div class="manual-banner">CLASSIFIED — DEFUSAL MANUAL · DO NOT SHOW THE DEFUSER</div>
-        <nav id="manual-tabs" class="manual-tabs"></nav>
-        <div id="manual-content" class="manual-content"></div>
-      </div>
+    <div id="defuser-area">
+      <div id="scene-container"></div>
+      <div id="scene-hint" class="scene-hint">DRAG to orbit · CLICK to interact · serial on front of case</div>
     </div>
   </section>
 
@@ -139,14 +93,12 @@
       <h2 id="end-title">—</h2>
       <p id="end-reason" class="end-reason"></p>
       <div id="end-summary" class="end-summary"></div>
-      <button id="btn-back-lobby" class="btn primary">BACK</button>
+      <button id="btn-back-home" class="btn primary">BACK TO MENU</button>
     </div>
   </section>
 
   <div id="strike-flash" class="strike-flash"></div>
 
-  <!-- CDN socket.io so static Pages hosts still load the client library -->
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script type="importmap">
     {
       "imports": {
