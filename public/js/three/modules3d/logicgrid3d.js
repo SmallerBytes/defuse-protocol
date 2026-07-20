@@ -1,11 +1,10 @@
-/** Logic Grid — CRT question + READ NOTE clipboard on the table + answer bars. */
+/** Logic Grid — CRT question + table clipboard (always present) + answer bars. */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { CanvasTex, displayMaterial, labelMaterial, drawWrapped, drawLabel } from '../textUtil.js';
 
 export function build({ view, send }) {
   const group = new THREE.Group();
-  let noteOpen = false;
   let lastView = view;
 
   const housing = new THREE.Mesh(new RoundedBoxGeometry(0.27, 0.05, 0.105, 3, 0.01),
@@ -21,11 +20,9 @@ export function build({ view, send }) {
   screen.position.set(0, 0.051, -0.0805);
   group.add(screen);
 
-  /* ---- Clipboard on the table (parented to device root via tableProp) ---- */
+  /* ---- Clipboard always on the table when this module is present ---- */
   const clipboard = new THREE.Group();
   clipboard.name = 'logicgrid-clipboard';
-  clipboard.visible = false;
-  // Front-right of the bomb, resting on the tabletop
   clipboard.position.set(0.58, 0.005, 0.52);
   clipboard.rotation.y = -0.35;
 
@@ -36,7 +33,6 @@ export function build({ view, send }) {
   board.receiveShadow = true;
   clipboard.add(board);
 
-  // Metal clip at the top (toward -Z of board local space)
   const clipMat = new THREE.MeshStandardMaterial({ color: 0x9aa3b0, roughness: 0.35, metalness: 0.85 });
   const clipBase = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.012, 0.035), clipMat);
   clipBase.position.set(0, 0.016, -0.145);
@@ -63,17 +59,15 @@ export function build({ view, send }) {
   paper.receiveShadow = true;
   clipboard.add(paper);
 
-  // READ NOTE stays on the module (right of CRT)
-  const btnTex = new CanvasTex(256, 80);
-  const btnSide = new THREE.MeshStandardMaterial({ color: 0x1e4a32, roughness: 0.5, metalness: 0.2 });
-  const noteBtn = new THREE.Mesh(
-    new RoundedBoxGeometry(0.12, 0.02, 0.036, 2, 0.004),
-    [btnSide, btnSide, labelMaterial(btnTex), btnSide, btnSide, btnSide]
-  );
-  noteBtn.position.set(0.155, 0.055, -0.06);
-  noteBtn.castShadow = true;
-  noteBtn.userData.highlightTargets = [noteBtn];
-  group.add(noteBtn);
+  function advanceNote() {
+    if ((lastView.clues || []).length > 1) send({ type: 'nextClue' });
+  }
+
+  // Click paper or board to flip to the next intercepted note
+  paper.userData.onClick = advanceNote;
+  paper.userData.highlightTargets = [paper, board];
+  board.userData.onClick = advanceNote;
+  board.userData.highlightTargets = [paper, board];
 
   const barGeo = new RoundedBoxGeometry(0.24, 0.022, 0.038, 2, 0.006);
   const bars = [];
@@ -92,16 +86,14 @@ export function build({ view, send }) {
     const clues = v.clues || [];
     const idx = v.clueIndex || 0;
     noteTex.draw((ctx, w, h) => {
-      // Aged paper
-      ctx.fillStyle = '#e8e0cc';
+      ctx.fillStyle = '#f2ead8';
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(160, 140, 100, 0.12)';
+      ctx.fillStyle = 'rgba(140, 120, 90, 0.1)';
       for (let i = 0; i < 28; i++) {
         const x = ((i * 97) % (w - 20)) + 10;
         const y = ((i * 53) % (h - 20)) + 10;
         ctx.fillRect(x, y, 3 + (i % 5), 1);
       }
-      // Ruled lines
       ctx.strokeStyle = '#c5d0e0';
       ctx.lineWidth = 2;
       for (let y = 140; y < h - 80; y += 44) {
@@ -110,8 +102,7 @@ export function build({ view, send }) {
         ctx.lineTo(w - 48, y);
         ctx.stroke();
       }
-      // Red margin
-      ctx.strokeStyle = '#e8a0a0';
+      ctx.strokeStyle = '#d09090';
       ctx.beginPath();
       ctx.moveTo(72, 100);
       ctx.lineTo(72, h - 60);
@@ -119,29 +110,26 @@ export function build({ view, send }) {
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#000000';
 
       if (!clues.length) {
         ctx.font = `bold 42px 'Consolas', monospace`;
-        ctx.fillStyle = '#3a3428';
         ctx.fillText('NO INTERCEPTED NOTES', w / 2, h / 2);
         return;
       }
 
-      ctx.fillStyle = '#2a2620';
       ctx.font = `bold 36px 'Consolas', monospace`;
       ctx.fillText(`INTERCEPTED NOTE  ${idx + 1} / ${clues.length}`, w / 2, 70);
 
       const pad = 88;
       const box = { x: pad, y: 130, w: w - pad * 2, h: h - 220 };
-      drawWrappedInBox(ctx, box, clues[idx], { color: '#1c1a16', size: 44 });
+      drawWrappedInBox(ctx, box, clues[idx], { color: '#000000', size: 44 });
 
-      ctx.font = `bold 26px 'Consolas', monospace`;
-      ctx.fillStyle = '#6a6458';
-      ctx.fillText(
-        clues.length > 1 ? 'PRESS READ NOTE AGAIN FOR NEXT' : 'PRESS READ NOTE AGAIN TO FILE AWAY',
-        w / 2,
-        h - 40
-      );
+      if (clues.length > 1) {
+        ctx.font = `bold 24px 'Consolas', monospace`;
+        ctx.fillStyle = '#000000';
+        ctx.fillText('TAP CLIPBOARD FOR NEXT NOTE', w / 2, h - 40);
+      }
     });
   }
 
@@ -175,33 +163,10 @@ export function build({ view, send }) {
     }
   }
 
-  function setNoteVisible(open) {
-    noteOpen = open;
-    clipboard.visible = open;
-    btnTex.draw((ctx, w, h) => drawLabel(ctx, w, h, open ? 'NEXT ▶' : 'READ NOTE', {
-      bg: open ? '#cfd6e4' : '#9fe8bd',
-      font: `bold 34px 'Consolas', monospace`
-    }));
-  }
-
-  noteBtn.userData.onClick = () => {
-    if (!noteOpen) {
-      paintNote(lastView);
-      setNoteVisible(true);
-      return;
-    }
-    const clues = lastView.clues || [];
-    if (clues.length <= 1) {
-      setNoteVisible(false);
-      return;
-    }
-    send({ type: 'nextClue' });
-  };
-
   function update(v) {
     lastView = v;
     qTex.draw((ctx, w, h) => drawWrapped(ctx, w, h, v.question || 'STANDBY', { size: 36 }));
-    if (noteOpen) paintNote(v);
+    paintNote(v);
 
     bars.forEach((b, i) => {
       const option = v.options[i] || null;
@@ -216,8 +181,6 @@ export function build({ view, send }) {
     });
   }
 
-  setNoteVisible(false);
   update(view);
-  // Device attaches tableProp to the bomb root so it sits on the table, not the module bay
   return { group, update, tableProp: clipboard };
 }
