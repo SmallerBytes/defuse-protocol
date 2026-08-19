@@ -123,22 +123,28 @@
     </ol>
   </div>
 
-  <div class="sheet" id="sec-threatplot">
-    <h2>6. Threat Plot</h2>
-    <p id="threat-intro"></p>
-    <h3>SAM coverage (the Defuser cannot see this)</h3>
-    <table id="threat-sams"><thead><tr><th>SAM</th><th>Threat coverage</th></tr></thead><tbody></tbody></table>
-    <h3>Route rules</h3>
-    <ol id="threat-rules"></ol>
+  <div class="sheet" id="sec-ordnance">
+    <h2>6. Weapons Release</h2>
+    <p id="ordnance-intro"></p>
+    <h3>Weapons rack</h3>
+    <table id="ordnance-weapons"><thead><tr><th>Weapon</th><th>Description</th><th>Guidance</th></tr></thead><tbody></tbody></table>
+    <h3>Weapon selection (apply in order)</h3>
+    <ol id="ordnance-rules"></ol>
+    <h3>Fuze</h3>
+    <ul id="ordnance-fuze"></ul>
+    <h3>Code thumbwheels</h3>
+    <ul id="ordnance-code"></ul>
+    <h3>Release checklist</h3>
+    <ol id="ordnance-checklist"></ol>
   </div>
 
-  <div class="sheet" id="sec-brevity">
-    <h2>7. Brevity Code</h2>
-    <p id="brevity-intro"></p>
-    <h3>Table 1 — display word → button position to read</h3>
-    <table id="brevity-t1"><thead><tr><th>Display word</th><th>Read button position</th></tr></thead><tbody></tbody></table>
-    <h3>Table 2 — word on that button → word to press</h3>
-    <table id="brevity-t2"><thead><tr><th>Word you read</th><th>Word to press</th></tr></thead><tbody></tbody></table>
+  <div class="sheet" id="sec-comms">
+    <h2>7. Radio Net &amp; Authentication</h2>
+    <p id="comms-intro"></p>
+    <h3>Comms annex (callsign → frequency)</h3>
+    <table id="comms-nets"><thead><tr><th>Callsign</th><th>Net</th><th>Freq (MHz)</th></tr></thead><tbody></tbody></table>
+    <h3>Authentication matrix (row = first word, column = second word)</h3>
+    <table id="comms-auth"><thead><tr id="comms-auth-head"><th></th></tr></thead><tbody></tbody></table>
   </div>
 
   <script type="module">
@@ -153,14 +159,14 @@
       }
     }
 
-    const [wires, symbols, memory, morse, logic, threat, brevity] = await Promise.all([
+    const [wires, symbols, memory, morse, logic, ordnance, comms] = await Promise.all([
       fetch('data/modules/wires.json').then((r) => r.json()),
       fetch('data/modules/symbols.json').then((r) => r.json()),
       fetch('data/modules/memory.json').then((r) => r.json()),
       fetch('data/modules/morse.json').then((r) => r.json()),
       fetch('data/modules/logicgrid.json').then((r) => r.json()),
-      fetch('data/modules/threatplot.json').then((r) => r.json()),
-      fetch('data/modules/brevity.json').then((r) => r.json())
+      fetch('data/modules/ordnance.json').then((r) => r.json()),
+      fetch('data/modules/comms.json').then((r) => r.json())
     ]);
 
     document.getElementById('wires-intro').textContent = wires.intro;
@@ -224,33 +230,45 @@
       rbody.appendChild(tr);
     }
 
-    document.getElementById('threat-intro').textContent = threat.intro;
-    const sbody = document.querySelector('#threat-sams tbody');
-    for (const s of threat.samTypes) {
+    document.getElementById('ordnance-intro').textContent = ordnance.intro;
+    const wbody = document.querySelector('#ordnance-weapons tbody');
+    for (const w of ordnance.weapons) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><b>${s.type}</b></td><td>${s.coverage}</td>`;
-      sbody.appendChild(tr);
+      tr.innerHTML = `<td><b>${w.id}</b></td><td>${w.desc}</td><td>${w.guidance}</td>`;
+      wbody.appendChild(tr);
     }
-    const tRules = document.getElementById('threat-rules');
-    for (const rule of threat.rules) {
-      const li = document.createElement('li');
-      li.textContent = rule;
-      tRules.appendChild(li);
-    }
+    const fill = (id, items, tag) => {
+      const el = document.getElementById(id);
+      for (const text of items) {
+        const li = document.createElement(tag);
+        li.textContent = text;
+        el.appendChild(li);
+      }
+    };
+    fill('ordnance-rules', ordnance.rules, 'li');
+    fill('ordnance-fuze', ordnance.fuzeRules, 'li');
+    fill('ordnance-code', ordnance.codeRules, 'li');
+    fill('ordnance-checklist', ordnance.checklist, 'li');
 
-    document.getElementById('brevity-intro').textContent = brevity.intro;
-    const b1 = document.querySelector('#brevity-t1 tbody');
-    for (const [word, pos] of Object.entries(brevity.displayRead)) {
+    document.getElementById('comms-intro').textContent = comms.intro;
+    const nbody = document.querySelector('#comms-nets tbody');
+    for (const c of comms.callsigns) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><b>${word}</b></td><td>${pos}</td>`;
-      b1.appendChild(tr);
+      tr.innerHTML = `<td><b>${c.call}</b></td><td>${c.net}</td><td><b>${Number(c.freq).toFixed(2)}</b></td>`;
+      nbody.appendChild(tr);
     }
-    const b2 = document.querySelector('#brevity-t2 tbody');
-    for (const [read, press] of Object.entries(brevity.readPress)) {
+    const headRow = document.getElementById('comms-auth-head');
+    for (const label of comms.matrixLabels) {
+      const th = document.createElement('th');
+      th.textContent = label;
+      headRow.appendChild(th);
+    }
+    const abody = document.querySelector('#comms-auth tbody');
+    comms.matrix.forEach((row, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${read}</td><td><b>${press}</b></td>`;
-      b2.appendChild(tr);
-    }
+      tr.innerHTML = `<th>${comms.matrixLabels[i]}</th>` + row.map((l) => `<td style="text-align:center"><b>${l}</b></td>`).join('');
+      abody.appendChild(tr);
+    });
   </script>
 </body>
 </html>

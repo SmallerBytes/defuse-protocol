@@ -1,0 +1,39 @@
+{
+  "weapons": [
+    { "id": "GBU-12", "desc": "500 lb laser-guided bomb", "guidance": "LASER" },
+    { "id": "GBU-31", "desc": "2000 lb JDAM, penetrator", "guidance": "GPS" },
+    { "id": "GBU-38", "desc": "500 lb JDAM, low collateral", "guidance": "GPS" },
+    { "id": "AGM-65", "desc": "Maverick missile (laser-guided)", "guidance": "LASER" }
+  ],
+  "targetsByDifficulty": {
+    "easy": 1,
+    "normal": 2,
+    "hard": 3
+  },
+  "movingTargets": ["T-72 COLUMN", "ARMOR CONVOY", "SCUD TEL"],
+  "staticTargets": ["RADAR SITE", "C2 BUNKER", "SUPPLY DEPOT", "HQ BUILDING", "SAM SITE"],
+  "intro": "A stores-management panel with a targeting screen. The Defuser must fly a full release checklist for every target card — one wrong PICKLE is a strike. The Defuser reads the target card aloud; you weaponeer it and talk them through the panel setup.",
+  "rules": [
+    "If the target is MOVING, select AGM-65.",
+    "Otherwise, if the target is URBAN (collateral must stay LOW), select GBU-38.",
+    "Otherwise, if the target is HARDENED, select GBU-31.",
+    "Otherwise, if weather is CLEAR, select GBU-12.",
+    "Otherwise (static, open, soft, weather IMC), select GBU-31."
+  ],
+  "fuzeRules": [
+    "HARDENED target: fuze TAIL.",
+    "Any other target: fuze NOSE."
+  ],
+  "codeRules": [
+    "LASER weapons (GBU-12, AGM-65): the code is 1, then the two digits from the middle of the serial number (positions 3 and 4).",
+    "GPS weapons (GBU-31, GBU-38): the code must read 000."
+  ],
+  "checklist": [
+    "MASTER ARM lever to ARM.",
+    "Rotate the STATION knob until the correct weapon shows.",
+    "Set the FUZE switch (NOSE / TAIL).",
+    "Dial the 3-digit CODE on the thumbwheels.",
+    "Press PICKLE. Repeat for each target card.",
+    "After the final target: MASTER ARM back to SAFE, or the module never disarms."
+  ]
+}

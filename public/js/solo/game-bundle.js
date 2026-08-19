@@ -782,270 +782,319 @@ var require_logicgrid2 = __commonJS({
   }
 });
 
-// data/modules/threatplot.json
-var require_threatplot = __commonJS({
-  "data/modules/threatplot.json"(exports, module) {
+// data/modules/ordnance.json
+var require_ordnance = __commonJS({
+  "data/modules/ordnance.json"(exports, module) {
     module.exports = {
-      sizesByDifficulty: { easy: 5, normal: 6, hard: 6 },
-      samsByDifficulty: { easy: 3, normal: 4, hard: 5 },
-      minPathByDifficulty: { easy: 4, normal: 5, hard: 7 },
-      samTypes: [
-        { type: "SA-3", radius: 0, coverage: "its own cell only" },
-        { type: "SA-6", radius: 1, coverage: "its cell and all 8 neighboring cells" },
-        { type: "SA-2", radius: 2, coverage: "its cell and every cell up to 2 cells away in any direction (diagonals count as one step)" }
+      weapons: [
+        { id: "GBU-12", desc: "500 lb laser-guided bomb", guidance: "LASER" },
+        { id: "GBU-31", desc: "2000 lb JDAM, penetrator", guidance: "GPS" },
+        { id: "GBU-38", desc: "500 lb JDAM, low collateral", guidance: "GPS" },
+        { id: "AGM-65", desc: "Maverick missile (laser-guided)", guidance: "LASER" }
       ],
-      intro: "The Defuser's scope shows the jet, the target, SAM sites with their type, and \u2014 on long sorties \u2014 a tanker anchor (T). The scope does NOT show SAM coverage rings. The Defuser reads out the grid, the SAM types, and their cells; the Experts mark each site's coverage from the table below, find a safe route, and talk the jet to the target one step at a time (N / E / S / W). Entering covered airspace or leaving the grid is a strike and the jet resets to its start cell. If a tanker anchor is shown, the jet must pass through it BEFORE reaching the target \u2014 hitting the target dry is a strike.",
+      targetsByDifficulty: {
+        easy: 1,
+        normal: 2,
+        hard: 3
+      },
+      movingTargets: ["T-72 COLUMN", "ARMOR CONVOY", "SCUD TEL"],
+      staticTargets: ["RADAR SITE", "C2 BUNKER", "SUPPLY DEPOT", "HQ BUILDING", "SAM SITE"],
+      intro: "A stores-management panel with a targeting screen. The Defuser must fly a full release checklist for every target card \u2014 one wrong PICKLE is a strike. The Defuser reads the target card aloud; you weaponeer it and talk them through the panel setup.",
       rules: [
-        "Columns are letters (A, B, C\u2026) left to right; rows are numbers (1, 2, 3\u2026) top to bottom.",
-        "Mark each SAM's coverage using the table, then route the jet only through uncovered cells.",
-        "If a tanker anchor (T) is on the scope, the jet must pass through it before the target; the target only accepts a refueled jet.",
-        "A strike resets the jet to its start cell AND clears any refueling \u2014 plan the whole route before calling steps."
+        "If the target is MOVING, select AGM-65.",
+        "Otherwise, if the target is URBAN (collateral must stay LOW), select GBU-38.",
+        "Otherwise, if the target is HARDENED, select GBU-31.",
+        "Otherwise, if weather is CLEAR, select GBU-12.",
+        "Otherwise (static, open, soft, weather IMC), select GBU-31."
+      ],
+      fuzeRules: [
+        "HARDENED target: fuze TAIL.",
+        "Any other target: fuze NOSE."
+      ],
+      codeRules: [
+        "LASER weapons (GBU-12, AGM-65): the code is 1, then the two digits from the middle of the serial number (positions 3 and 4).",
+        "GPS weapons (GBU-31, GBU-38): the code must read 000."
+      ],
+      checklist: [
+        "MASTER ARM lever to ARM.",
+        "Rotate the STATION knob until the correct weapon shows.",
+        "Set the FUZE switch (NOSE / TAIL).",
+        "Dial the 3-digit CODE on the thumbwheels.",
+        "Press PICKLE. Repeat for each target card.",
+        "After the final target: MASTER ARM back to SAFE, or the module never disarms."
       ]
     };
   }
 });
 
-// server/modules/threatplot.js
-var require_threatplot2 = __commonJS({
-  "server/modules/threatplot.js"(exports, module) {
-    var data = require_threatplot();
-    var TYPE = "threatplot";
-    var NAME = "Threat Plot";
-    var COL_LETTERS = "ABCDEFGH";
-    var DIRS = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
-    function cellName(c) {
-      return `${COL_LETTERS[c.x]}${c.y + 1}`;
+// server/modules/ordnance.js
+var require_ordnance2 = __commonJS({
+  "server/modules/ordnance.js"(exports, module) {
+    var data = require_ordnance();
+    var TYPE = "ordnance";
+    var NAME = "Weapons Release";
+    var WEAPON_IDS = data.weapons.map((w) => w.id);
+    var LASER = new Set(data.weapons.filter((w) => w.guidance === "LASER").map((w) => w.id));
+    function weaponFor(attrs) {
+      if (attrs.moving) return "AGM-65";
+      if (attrs.urban) return "GBU-38";
+      if (attrs.hardened) return "GBU-31";
+      if (attrs.wx === "CLEAR") return "GBU-12";
+      return "GBU-31";
     }
-    function radiusOf(type) {
-      return data.samTypes.find((s) => s.type === type).radius;
-    }
-    function coverageSet(sams) {
-      const covered = /* @__PURE__ */ new Set();
-      for (const sam of sams) {
-        const r = radiusOf(sam.type);
-        for (let dx = -r; dx <= r; dx++) {
-          for (let dy = -r; dy <= r; dy++) {
-            covered.add(`${sam.x + dx},${sam.y + dy}`);
-          }
-        }
+    function makeTarget(rng, serial) {
+      const intended = rng.pick(["GBU-12", "GBU-31", "GBU-38", "AGM-65", "GBU-31"]);
+      const attrs = { moving: false, urban: false, hardened: false, wx: rng.pick(["CLEAR", "IMC"]) };
+      switch (intended) {
+        case "AGM-65":
+          attrs.moving = true;
+          attrs.urban = rng.float() < 0.35;
+          attrs.hardened = rng.float() < 0.3;
+          break;
+        case "GBU-38":
+          attrs.urban = true;
+          attrs.hardened = rng.float() < 0.4;
+          break;
+        case "GBU-12":
+          attrs.wx = "CLEAR";
+          break;
+        default:
+          if (rng.float() < 0.5) attrs.hardened = true;
+          else attrs.wx = "IMC";
+          break;
       }
-      return covered;
+      const weapon = weaponFor(attrs);
+      const fuze = attrs.hardened ? "TAIL" : "NOSE";
+      const code = LASER.has(weapon) ? [1, parseInt(serial[2], 10), parseInt(serial[3], 10)] : [0, 0, 0];
+      const name = attrs.moving ? rng.pick(data.movingTargets) : rng.pick(data.staticTargets);
+      return { name, attrs, weapon, fuze, code };
     }
-    function findPath(size, covered, start, target, tanker) {
-      const key = (x, y, ref) => `${x},${y},${ref ? 1 : 0}`;
-      const startRef = !tanker;
-      const queue = [{ x: start.x, y: start.y, ref: startRef, steps: [] }];
-      const seen = /* @__PURE__ */ new Set([key(start.x, start.y, startRef)]);
-      while (queue.length) {
-        const cur = queue.shift();
-        if (cur.x === target.x && cur.y === target.y && cur.ref) return cur.steps;
-        for (const [dir, [dx, dy]] of Object.entries(DIRS)) {
-          const nx = cur.x + dx;
-          const ny = cur.y + dy;
-          if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
-          if (covered.has(`${nx},${ny}`)) continue;
-          const ref = cur.ref || tanker && nx === tanker.x && ny === tanker.y;
-          const k = key(nx, ny, ref);
-          if (seen.has(k)) continue;
-          seen.add(k);
-          queue.push({ x: nx, y: ny, ref, steps: [...cur.steps, dir] });
-        }
-      }
-      return null;
+    function describe(t) {
+      const a = t.attrs;
+      return [
+        t.name,
+        a.moving ? "MOVING" : "STATIC",
+        a.urban ? "URBAN" : "OPEN TERRAIN",
+        a.hardened ? "HARDENED" : "SOFT",
+        `WX ${a.wx}`
+      ].join(" \xB7 ");
     }
     function fixedManual() {
       return {
         intro: data.intro,
-        samTypes: data.samTypes.map((s) => ({ type: s.type, coverage: s.coverage })),
-        rules: data.rules
+        weapons: data.weapons,
+        rules: data.rules,
+        fuzeRules: data.fuzeRules,
+        codeRules: data.codeRules,
+        checklist: data.checklist
       };
     }
     function generate(ctx) {
-      const { rng, difficulty } = ctx;
-      const size = data.sizesByDifficulty[difficulty];
-      const samCount = data.samsByDifficulty[difficulty];
-      const minPath = data.minPathByDifficulty[difficulty];
-      const needTanker = difficulty === "hard";
-      const samWeights = ["SA-3", "SA-3", "SA-6", "SA-6", "SA-2"];
-      let layout = null;
-      for (let attempt = 0; attempt < 400 && !layout; attempt++) {
-        const rndCell = () => ({ x: rng.int(0, size - 1), y: rng.int(0, size - 1) });
-        const start = rndCell();
-        let target = rndCell();
-        if (target.x === start.x && target.y === start.y) continue;
-        if (Math.abs(target.x - start.x) + Math.abs(target.y - start.y) < 3) continue;
-        let tanker = null;
-        if (needTanker) {
-          tanker = rndCell();
-          if (tanker.x === start.x && tanker.y === start.y || tanker.x === target.x && tanker.y === target.y) continue;
-        }
-        const reserved = new Set([start, target, ...tanker ? [tanker] : []].map((c) => `${c.x},${c.y}`));
-        const open = [];
-        for (let x = 0; x < size; x++) for (let y = 0; y < size; y++) {
-          if (!reserved.has(`${x},${y}`)) open.push({ x, y });
-        }
-        if (open.length < samCount) continue;
-        const samCells = rng.shuffle(open).slice(0, samCount);
-        const sams = samCells.map((c) => ({ ...c, type: rng.pick(samWeights) }));
-        const covered = coverageSet(sams);
-        if ([start, target, ...tanker ? [tanker] : []].some((c) => covered.has(`${c.x},${c.y}`))) continue;
-        const path = findPath(size, covered, start, target, tanker);
-        if (!path || path.length < minPath) continue;
-        layout = { size, start, target, tanker, sams };
-      }
-      if (!layout) {
-        layout = {
-          size,
-          start: { x: 0, y: 0 },
-          target: { x: size - 1, y: size - 1 },
-          tanker: needTanker ? { x: size - 1, y: 0 } : null,
-          sams: [{ x: Math.floor(size / 2), y: Math.floor(size / 2), type: "SA-3" }]
-        };
-      }
+      const { rng, difficulty, serial } = ctx;
+      const count = data.targetsByDifficulty[difficulty];
+      const targets = Array.from({ length: count }, () => makeTarget(rng, serial));
       const state = {
-        ...layout,
-        pos: { ...layout.start },
-        refueled: !layout.tanker
+        targets,
+        index: 0,
+        masterArm: false,
+        station: 0,
+        fuze: "NOSE",
+        code: [0, 0, 0],
+        weapons: WEAPON_IDS
       };
       return { state, manual: fixedManual(), view: view(state) };
     }
     function view(state) {
+      const t = state.targets[state.index];
+      const allServiced = state.index >= state.targets.length;
       return {
-        size: state.size,
-        start: cellName(state.start),
-        target: cellName(state.target),
-        tanker: state.tanker ? cellName(state.tanker) : null,
-        sams: state.sams.map((s) => ({ type: s.type, cell: cellName(s) })),
-        player: cellName(state.pos),
-        refueled: state.refueled
+        index: Math.min(state.index + 1, state.targets.length),
+        total: state.targets.length,
+        card: t ? describe(t) : null,
+        allServiced,
+        masterArm: state.masterArm,
+        weapon: state.weapons[state.station],
+        fuze: state.fuze,
+        code: state.code.slice()
       };
     }
-    function resetToStart(state) {
-      state.pos = { ...state.start };
-      state.refueled = !state.tanker;
-    }
     function action(state, act) {
-      if (act.type !== "step" || !DIRS[act.dir]) return { status: "ok", view: view(state) };
-      const [dx, dy] = DIRS[act.dir];
-      const nx = state.pos.x + dx;
-      const ny = state.pos.y + dy;
-      const covered = coverageSet(state.sams);
-      const outOfBounds = nx < 0 || ny < 0 || nx >= state.size || ny >= state.size;
-      if (outOfBounds || covered.has(`${nx},${ny}`)) {
-        const reason = outOfBounds ? "left the grid" : "entered threat coverage";
-        resetToStart(state);
-        return { status: "strike", view: view(state), detail: reason };
-      }
-      state.pos = { x: nx, y: ny };
-      if (state.tanker && nx === state.tanker.x && ny === state.tanker.y) state.refueled = true;
-      if (nx === state.target.x && ny === state.target.y) {
-        if (state.tanker && !state.refueled) {
-          resetToStart(state);
-          return { status: "strike", view: view(state), detail: "reached target without refueling" };
+      const allServiced = state.index >= state.targets.length;
+      switch (act.type) {
+        case "arm": {
+          state.masterArm = !state.masterArm;
+          if (!state.masterArm && allServiced) {
+            return { status: "solved", view: view(state), detail: "weapons safe, all targets serviced" };
+          }
+          return { status: "ok", view: view(state) };
         }
-        return { status: "solved", view: view(state), detail: "target reached" };
+        case "station": {
+          state.station = (state.station + 1) % state.weapons.length;
+          return { status: "ok", view: view(state) };
+        }
+        case "fuze": {
+          state.fuze = state.fuze === "NOSE" ? "TAIL" : "NOSE";
+          return { status: "ok", view: view(state) };
+        }
+        case "wheel": {
+          const i = act.index;
+          if (i === 0 || i === 1 || i === 2) {
+            state.code[i] = (state.code[i] + 1) % 10;
+          }
+          return { status: "ok", view: view(state) };
+        }
+        case "pickle": {
+          if (allServiced) return { status: "ok", view: view(state) };
+          if (!state.masterArm) {
+            return { status: "ok", view: view(state), detail: "pickle with MASTER ARM safe" };
+          }
+          const t = state.targets[state.index];
+          const selected = state.weapons[state.station];
+          const codeOk = state.code[0] === t.code[0] && state.code[1] === t.code[1] && state.code[2] === t.code[2];
+          if (selected === t.weapon && state.fuze === t.fuze && codeOk) {
+            state.index++;
+            if (state.index >= state.targets.length) {
+              return { status: "ok", view: view(state), detail: "final target destroyed \u2014 safe the panel" };
+            }
+            return { status: "ok", view: view(state), detail: "target destroyed" };
+          }
+          const expect = `${t.weapon}/${t.fuze}/${t.code.join("")}`;
+          const got = `${selected}/${state.fuze}/${state.code.join("")}`;
+          return { status: "strike", view: view(state), detail: `bad release ${got}, expected ${expect}` };
+        }
+        default:
+          return { status: "ok", view: view(state) };
       }
-      return { status: "ok", view: view(state) };
     }
     module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };
   }
 });
 
-// data/modules/brevity.json
-var require_brevity = __commonJS({
-  "data/modules/brevity.json"(exports, module) {
+// data/modules/comms.json
+var require_comms = __commonJS({
+  "data/modules/comms.json"(exports, module) {
     module.exports = {
-      words: ["BANDIT", "BOGEY", "SPIKE", "MUD", "TALLY", "NO JOY", "JUDY", "WILCO", "BINGO", "JOKER", "SPLASH", "ANGELS"],
-      displayRead: {
-        BANDIT: 3,
-        BOGEY: 1,
-        SPIKE: 5,
-        MUD: 2,
-        TALLY: 6,
-        "NO JOY": 4,
-        JUDY: 2,
-        WILCO: 5,
-        BINGO: 1,
-        JOKER: 6,
-        SPLASH: 4,
-        ANGELS: 3
+      band: { start: 240, step: 0.25, steps: 25 },
+      callsigns: [
+        { call: "VIPER 21", net: "AWACS CHECK-IN", freq: 243.75 },
+        { call: "HAVOC 11", net: "TACTICAL", freq: 241.25 },
+        { call: "PYTHON 31", net: "STRIKE", freq: 245.5 },
+        { call: "COBRA 05", net: "AIRBORNE ALERT", freq: 240.75 },
+        { call: "MUSTANG 41", net: "TANKER", freq: 244.25 },
+        { call: "RAGE 12", net: "GUARD", freq: 242 },
+        { call: "SABER 33", net: "JTAC", freq: 245 },
+        { call: "NOMAD 62", net: "RESCUE", freq: 241.75 }
+      ],
+      matrixLabels: ["WHISKEY", "ROMEO", "TANGO", "FOXTROT", "KILO"],
+      matrix: [
+        ["M", "T", "R", "J", "P"],
+        ["K", "B", "S", "L", "D"],
+        ["G", "N", "V", "C", "F"],
+        ["H", "W", "Q", "A", "X"],
+        ["Z", "E", "U", "Y", "O"]
+      ],
+      roundsByDifficulty: {
+        easy: 1,
+        normal: 1,
+        hard: 2
       },
-      readPress: {
-        BANDIT: "WILCO",
-        BOGEY: "TALLY",
-        SPIKE: "ANGELS",
-        MUD: "BINGO",
-        TALLY: "SPIKE",
-        "NO JOY": "JOKER",
-        JUDY: "MUD",
-        WILCO: "BOGEY",
-        BINGO: "SPLASH",
-        JOKER: "JUDY",
-        SPLASH: "BANDIT",
-        ANGELS: "NO JOY"
-      },
-      stagesByDifficulty: { easy: 1, normal: 2, hard: 3 },
-      intro: "The device CRT shows a brevity code word above six buttons, each labeled with a brevity word. For each stage: (1) find the DISPLAY word in Table 1 \u2014 it names the button POSITION to read (numbered left to right, top to bottom, 1\u20136); (2) find the word printed on THAT button in Table 2 \u2014 it names the word to PRESS. Press the button labeled with that word to clear the stage. A wrong press is a strike and the stage stays up. Button labels reshuffle every stage."
+      intro: "A UHF radio. Step 1 \u2014 NET: the screen shows a callsign; look up its frequency in the comms annex and have the Defuser dial it exactly (coarse \xB11.00, fine \xB10.25), then key XMIT. Keying on the wrong frequency is a strike. Step 2 \u2014 AUTH: the screen shows a phonetic challenge like WHISKEY \xB7 FOXTROT; find the row (first word) and column (second word) in the authentication matrix and have the Defuser spin the letter dial to that letter and press AUTH. A wrong letter is a strike."
     };
   }
 });
 
-// server/modules/brevity.js
-var require_brevity2 = __commonJS({
-  "server/modules/brevity.js"(exports, module) {
-    var data = require_brevity();
-    var TYPE = "brevity";
-    var NAME = "Brevity Code";
+// server/modules/comms.js
+var require_comms2 = __commonJS({
+  "server/modules/comms.js"(exports, module) {
+    var data = require_comms();
+    var TYPE = "comms";
+    var NAME = "Radio Net";
+    var { start, step, steps } = data.band;
+    function freqAt(idx) {
+      return (start + idx * step).toFixed(2);
+    }
+    function idxOf(freq) {
+      return Math.round((freq - start) / step);
+    }
     function fixedManual() {
       return {
         intro: data.intro,
-        table1: data.words.map((w) => ({ word: w, position: data.displayRead[w] })),
-        table2: data.words.map((w) => ({ read: w, press: data.readPress[w] }))
+        callsigns: data.callsigns.map((c) => ({ ...c, freq: c.freq.toFixed(2) })),
+        matrixLabels: data.matrixLabels,
+        matrix: data.matrix
       };
-    }
-    function makeStage(rng) {
-      const display = rng.pick(data.words);
-      const readPos = data.displayRead[display];
-      for (let attempt = 0; attempt < 300; attempt++) {
-        const buttons2 = rng.shuffle(data.words.slice()).slice(0, 6);
-        const readWord2 = buttons2[readPos - 1];
-        const answer2 = data.readPress[readWord2];
-        if (buttons2.includes(answer2)) return { display, buttons: buttons2, answer: answer2 };
-      }
-      const buttons = rng.shuffle(data.words.slice()).slice(0, 6);
-      const readWord = buttons[readPos - 1];
-      const answer = data.readPress[readWord];
-      buttons[readPos % 6] = answer;
-      return { display, buttons, answer };
     }
     function generate(ctx) {
       const { rng, difficulty } = ctx;
-      const count = data.stagesByDifficulty[difficulty];
-      const stages = Array.from({ length: count }, () => makeStage(rng));
-      const state = { stages, stage: 0 };
+      const roundsWanted = data.roundsByDifficulty[difficulty];
+      const calls = rng.shuffle(data.callsigns.slice()).slice(0, roundsWanted);
+      const rounds = calls.map((c) => {
+        const row = rng.int(0, data.matrixLabels.length - 1);
+        const col = rng.int(0, data.matrixLabels.length - 1);
+        return {
+          call: c.call,
+          answerIdx: idxOf(c.freq),
+          challenge: `${data.matrixLabels[row]} \xB7 ${data.matrixLabels[col]}`,
+          answer: data.matrix[row][col]
+        };
+      });
+      const state = {
+        rounds,
+        round: 0,
+        phase: "net",
+        freqIdx: 0,
+        letterIdx: 0
+      };
       return { state, manual: fixedManual(), view: view(state) };
     }
     function view(state) {
-      const s = state.stages[state.stage];
+      const r = state.rounds[state.round];
       return {
-        stage: state.stage + 1,
-        total: state.stages.length,
-        display: s ? s.display : null,
-        buttons: s ? s.buttons : []
+        round: Math.min(state.round + 1, state.rounds.length),
+        total: state.rounds.length,
+        phase: r ? state.phase : "done",
+        prompt: r ? state.phase === "net" ? r.call : r.challenge : null,
+        freq: freqAt(state.freqIdx),
+        letter: String.fromCharCode(65 + state.letterIdx)
       };
     }
     function action(state, act) {
-      if (act.type !== "press") return { status: "ok", view: view(state) };
-      const s = state.stages[state.stage];
-      if (!s || !s.buttons.includes(act.label)) return { status: "ok", view: view(state) };
-      if (act.label === s.answer) {
-        state.stage++;
-        if (state.stage >= state.stages.length) {
-          return { status: "solved", view: view(state), detail: "all brevity stages cleared" };
+      const r = state.rounds[state.round];
+      switch (act.type) {
+        case "tune": {
+          const delta = Math.trunc(Number(act.steps) || 0);
+          state.freqIdx = Math.min(steps - 1, Math.max(0, state.freqIdx + delta));
+          return { status: "ok", view: view(state) };
         }
-        return { status: "ok", view: view(state), detail: "stage cleared" };
+        case "letter": {
+          const delta = Math.trunc(Number(act.delta) || 0);
+          state.letterIdx = ((state.letterIdx + delta) % 26 + 26) % 26;
+          return { status: "ok", view: view(state) };
+        }
+        case "xmit": {
+          if (!r || state.phase !== "net") return { status: "ok", view: view(state) };
+          if (state.freqIdx === r.answerIdx) {
+            state.phase = "auth";
+            return { status: "ok", view: view(state), detail: `net established on ${freqAt(state.freqIdx)}` };
+          }
+          return { status: "strike", view: view(state), detail: `keyed ${freqAt(state.freqIdx)}, expected ${freqAt(r.answerIdx)}` };
+        }
+        case "auth": {
+          if (!r || state.phase !== "auth") return { status: "ok", view: view(state) };
+          const letter = String.fromCharCode(65 + state.letterIdx);
+          if (letter === r.answer) {
+            state.round++;
+            state.phase = "net";
+            if (state.round >= state.rounds.length) {
+              return { status: "solved", view: view(state), detail: "all nets authenticated" };
+            }
+            return { status: "ok", view: view(state), detail: "authentication valid" };
+          }
+          return { status: "strike", view: view(state), detail: `bad auth ${letter}, expected ${r.answer}` };
+        }
+        default:
+          return { status: "ok", view: view(state) };
       }
-      return { status: "strike", view: view(state), detail: `pressed ${act.label}, expected ${s.answer}` };
     }
     module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };
   }
@@ -1059,9 +1108,9 @@ var require_modules = __commonJS({
     var memory = require_memory2();
     var morse = require_morse2();
     var logicgrid = require_logicgrid2();
-    var threatplot = require_threatplot2();
-    var brevity = require_brevity2();
-    var MODULES = [wires, symbols, memory, morse, logicgrid, threatplot, brevity];
+    var ordnance = require_ordnance2();
+    var comms = require_comms2();
+    var MODULES = [wires, symbols, memory, morse, logicgrid, ordnance, comms];
     var registry = new Map(MODULES.map((m) => [m.type, m]));
     function getModule(type) {
       const mod = registry.get(type);
@@ -1085,7 +1134,7 @@ var require_game = __commonJS({
       normal: { moduleCount: 5, timeMs: 5 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
       hard: { moduleCount: 5, timeMs: 3 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
     };
-    var HARD_REQUIRED = ["threatplot", "brevity"];
+    var HARD_REQUIRED = ["ordnance", "comms"];
     function makeSerial(rng) {
       const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
       const digits = "0123456789";

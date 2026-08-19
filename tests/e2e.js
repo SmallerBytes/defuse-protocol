@@ -103,45 +103,53 @@ async function main() {
         defuser.emit('module:action', { moduleId: m.id, action: { type: 'answer', option: q.answer } });
         await wait(100);
       }
-    } else if (m.type === 'threatplot') {
-      const tp = require('../data/modules/threatplot.json');
-      const radius = new Map(tp.samTypes.map((s) => [s.type, s.radius]));
-      const covered = new Set();
-      for (const sam of s.sams) {
-        const r = radius.get(sam.type);
-        for (let dx = -r; dx <= r; dx++) {
-          for (let dy = -r; dy <= r; dy++) covered.add(`${sam.x + dx},${sam.y + dy}`);
+    } else if (m.type === 'ordnance') {
+      // Track panel state locally; the shadow game state never mutates here.
+      let armed = false, station = 0, fuze = 'NOSE';
+      const code = [0, 0, 0];
+      for (const t of s.targets) {
+        if (!armed) {
+          defuser.emit('module:action', { moduleId: m.id, action: { type: 'arm' } });
+          armed = true;
+          await wait(80);
         }
-      }
-      const dirs = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
-      const key = (x, y, ref) => `${x},${y},${ref ? 1 : 0}`;
-      const queue = [{ x: s.start.x, y: s.start.y, ref: !s.tanker, steps: [] }];
-      const seen = new Set([key(queue[0].x, queue[0].y, queue[0].ref)]);
-      let path = null;
-      while (queue.length && !path) {
-        const cur = queue.shift();
-        if (cur.x === s.target.x && cur.y === s.target.y && cur.ref) { path = cur.steps; break; }
-        for (const [dir, [dx, dy]] of Object.entries(dirs)) {
-          const nx = cur.x + dx;
-          const ny = cur.y + dy;
-          if (nx < 0 || ny < 0 || nx >= s.size || ny >= s.size) continue;
-          if (covered.has(`${nx},${ny}`)) continue;
-          const ref = cur.ref || (s.tanker && nx === s.tanker.x && ny === s.tanker.y);
-          const k = key(nx, ny, ref);
-          if (seen.has(k)) continue;
-          seen.add(k);
-          queue.push({ x: nx, y: ny, ref, steps: [...cur.steps, dir] });
+        const targetStation = s.weapons.indexOf(t.weapon);
+        while (station !== targetStation) {
+          defuser.emit('module:action', { moduleId: m.id, action: { type: 'station' } });
+          station = (station + 1) % s.weapons.length;
+          await wait(80);
         }
+        if (fuze !== t.fuze) {
+          defuser.emit('module:action', { moduleId: m.id, action: { type: 'fuze' } });
+          fuze = t.fuze;
+          await wait(80);
+        }
+        for (let i = 0; i < 3; i++) {
+          while (code[i] !== t.code[i]) {
+            defuser.emit('module:action', { moduleId: m.id, action: { type: 'wheel', index: i } });
+            code[i] = (code[i] + 1) % 10;
+            await wait(50);
+          }
+        }
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'pickle' } });
+        await wait(150);
       }
-      assert.ok(path, 'threat plot solvable');
-      for (const dir of path) {
-        defuser.emit('module:action', { moduleId: m.id, action: { type: 'step', dir } });
+      defuser.emit('module:action', { moduleId: m.id, action: { type: 'arm' } });
+      await wait(150);
+    } else if (m.type === 'comms') {
+      let freqIdx = 0, letterIdx = 0;
+      for (const r of s.rounds) {
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'tune', steps: r.answerIdx - freqIdx } });
+        freqIdx = r.answerIdx;
         await wait(100);
-      }
-    } else if (m.type === 'brevity') {
-      for (const st of s.stages) {
-        defuser.emit('module:action', { moduleId: m.id, action: { type: 'press', label: st.answer } });
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'xmit' } });
+        await wait(150);
+        const target = r.answer.charCodeAt(0) - 65;
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'letter', delta: target - letterIdx } });
+        letterIdx = target;
         await wait(100);
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'auth' } });
+        await wait(150);
       }
     }
     await wait(150);

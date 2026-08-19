@@ -89,53 +89,47 @@ function solveModule(mod, state) {
       assert.strictEqual(r.status, 'solved');
       break;
     }
-    case 'threatplot': {
-      const tp = require('../data/modules/threatplot.json');
-      const radius = new Map(tp.samTypes.map((s) => [s.type, s.radius]));
-      const covered = new Set();
-      for (const sam of state.sams) {
-        const r = radius.get(sam.type);
-        for (let dx = -r; dx <= r; dx++) {
-          for (let dy = -r; dy <= r; dy++) covered.add(`${sam.x + dx},${sam.y + dy}`);
-        }
-      }
-      const dirs = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
-      const key = (x, y, ref) => `${x},${y},${ref ? 1 : 0}`;
-      const queue = [{ x: state.start.x, y: state.start.y, ref: !state.tanker, steps: [] }];
-      const seen = new Set([key(queue[0].x, queue[0].y, queue[0].ref)]);
-      let path = null;
-      while (queue.length && !path) {
-        const cur = queue.shift();
-        if (cur.x === state.target.x && cur.y === state.target.y && cur.ref) { path = cur.steps; break; }
-        for (const [dir, [dx, dy]] of Object.entries(dirs)) {
-          const nx = cur.x + dx;
-          const ny = cur.y + dy;
-          if (nx < 0 || ny < 0 || nx >= state.size || ny >= state.size) continue;
-          if (covered.has(`${nx},${ny}`)) continue;
-          const ref = cur.ref || (state.tanker && nx === state.tanker.x && ny === state.tanker.y);
-          const k = key(nx, ny, ref);
-          if (seen.has(k)) continue;
-          seen.add(k);
-          queue.push({ x: nx, y: ny, ref, steps: [...cur.steps, dir] });
-        }
-      }
-      assert.ok(path, 'threat plot solvable');
+    case 'ordnance': {
       let r = { status: 'ok' };
-      for (const dir of path) {
-        r = mod.action(state, { type: 'step', dir }, ctx);
-        assert.notStrictEqual(r.status, 'strike', `safe step ${dir}`);
+      while (state.index < state.targets.length) {
+        const t = state.targets[state.index];
+        if (!state.masterArm) r = mod.action(state, { type: 'arm' }, ctx);
+        let guard = 0;
+        while (state.weapons[state.station] !== t.weapon && guard++ < 5) {
+          r = mod.action(state, { type: 'station' }, ctx);
+        }
+        if (state.fuze !== t.fuze) r = mod.action(state, { type: 'fuze' }, ctx);
+        for (let i = 0; i < 3; i++) {
+          let g2 = 0;
+          while (state.code[i] !== t.code[i] && g2++ < 10) {
+            r = mod.action(state, { type: 'wheel', index: i }, ctx);
+          }
+        }
+        r = mod.action(state, { type: 'pickle' }, ctx);
+        assert.notStrictEqual(r.status, 'strike', 'ordnance pickle strike');
       }
+      // Safe the panel to finish
+      r = mod.action(state, { type: 'arm' }, ctx);
       assert.strictEqual(r.status, 'solved');
       break;
     }
-    case 'brevity': {
+    case 'comms': {
       let r = { status: 'ok' };
       let guard = 0;
-      while (r.status !== 'solved' && guard++ < 10) {
-        const s = state.stages[state.stage];
-        assert.ok(s, 'stage present');
-        r = mod.action(state, { type: 'press', label: s.answer }, ctx);
-        assert.notStrictEqual(r.status, 'strike');
+      while (r.status !== 'solved' && guard++ < 300) {
+        const round = state.rounds[state.round];
+        assert.ok(round, 'round present');
+        if (state.phase === 'net') {
+          const diff = round.answerIdx - state.freqIdx;
+          if (diff !== 0) r = mod.action(state, { type: 'tune', steps: diff }, ctx);
+          else r = mod.action(state, { type: 'xmit' }, ctx);
+        } else {
+          const target = round.answer.charCodeAt(0) - 65;
+          const diff = target - state.letterIdx;
+          if (diff !== 0) r = mod.action(state, { type: 'letter', delta: diff }, ctx);
+          else r = mod.action(state, { type: 'auth' }, ctx);
+        }
+        assert.notStrictEqual(r.status, 'strike', 'comms strike');
       }
       assert.strictEqual(r.status, 'solved');
       break;

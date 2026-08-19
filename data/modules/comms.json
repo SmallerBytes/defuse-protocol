@@ -1,0 +1,27 @@
+{
+  "band": { "start": 240.0, "step": 0.25, "steps": 25 },
+  "callsigns": [
+    { "call": "VIPER 21", "net": "AWACS CHECK-IN", "freq": 243.75 },
+    { "call": "HAVOC 11", "net": "TACTICAL", "freq": 241.25 },
+    { "call": "PYTHON 31", "net": "STRIKE", "freq": 245.5 },
+    { "call": "COBRA 05", "net": "AIRBORNE ALERT", "freq": 240.75 },
+    { "call": "MUSTANG 41", "net": "TANKER", "freq": 244.25 },
+    { "call": "RAGE 12", "net": "GUARD", "freq": 242.0 },
+    { "call": "SABER 33", "net": "JTAC", "freq": 245.0 },
+    { "call": "NOMAD 62", "net": "RESCUE", "freq": 241.75 }
+  ],
+  "matrixLabels": ["WHISKEY", "ROMEO", "TANGO", "FOXTROT", "KILO"],
+  "matrix": [
+    ["M", "T", "R", "J", "P"],
+    ["K", "B", "S", "L", "D"],
+    ["G", "N", "V", "C", "F"],
+    ["H", "W", "Q", "A", "X"],
+    ["Z", "E", "U", "Y", "O"]
+  ],
+  "roundsByDifficulty": {
+    "easy": 1,
+    "normal": 1,
+    "hard": 2
+  },
+  "intro": "A UHF radio. Step 1 — NET: the screen shows a callsign; look up its frequency in the comms annex and have the Defuser dial it exactly (coarse ±1.00, fine ±0.25), then key XMIT. Keying on the wrong frequency is a strike. Step 2 — AUTH: the screen shows a phonetic challenge like WHISKEY · FOXTROT; find the row (first word) and column (second word) in the authentication matrix and have the Defuser spin the letter dial to that letter and press AUTH. A wrong letter is a strike."
+}
