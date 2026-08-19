@@ -11,10 +11,10 @@ const symbols = require('./symbols');
 const memory = require('./memory');
 const morse = require('./morse');
 const logicgrid = require('./logicgrid');
-const ordnance = require('./ordnance');
-const comms = require('./comms');
+const threatplot = require('./threatplot');
+const brevity = require('./brevity');
 
-const MODULES = [wires, symbols, memory, morse, logicgrid, ordnance, comms];
+const MODULES = [wires, symbols, memory, morse, logicgrid, threatplot, brevity];
 
 const registry = new Map(MODULES.map((m) => [m.type, m]));
 

@@ -12,7 +12,7 @@ const DIFFICULTY = {
   hard:   { moduleCount: 5, timeMs: 3 * 60 * 1000,   maxStrikes: 2, strikeAccel: 0.4 }
 };
 
-const HARD_REQUIRED = ['ordnance', 'comms'];
+const HARD_REQUIRED = ['threatplot', 'brevity'];
 
 function makeSerial(rng) {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';

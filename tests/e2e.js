@@ -103,16 +103,44 @@ async function main() {
         defuser.emit('module:action', { moduleId: m.id, action: { type: 'answer', option: q.answer } });
         await wait(100);
       }
-    } else if (m.type === 'ordnance') {
-      for (const t of s.targets) {
-        defuser.emit('module:action', { moduleId: m.id, action: { type: 'release', weapon: t.answer } });
+    } else if (m.type === 'threatplot') {
+      const tp = require('../data/modules/threatplot.json');
+      const radius = new Map(tp.samTypes.map((s) => [s.type, s.radius]));
+      const covered = new Set();
+      for (const sam of s.sams) {
+        const r = radius.get(sam.type);
+        for (let dx = -r; dx <= r; dx++) {
+          for (let dy = -r; dy <= r; dy++) covered.add(`${sam.x + dx},${sam.y + dy}`);
+        }
+      }
+      const dirs = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
+      const key = (x, y, ref) => `${x},${y},${ref ? 1 : 0}`;
+      const queue = [{ x: s.start.x, y: s.start.y, ref: !s.tanker, steps: [] }];
+      const seen = new Set([key(queue[0].x, queue[0].y, queue[0].ref)]);
+      let path = null;
+      while (queue.length && !path) {
+        const cur = queue.shift();
+        if (cur.x === s.target.x && cur.y === s.target.y && cur.ref) { path = cur.steps; break; }
+        for (const [dir, [dx, dy]] of Object.entries(dirs)) {
+          const nx = cur.x + dx;
+          const ny = cur.y + dy;
+          if (nx < 0 || ny < 0 || nx >= s.size || ny >= s.size) continue;
+          if (covered.has(`${nx},${ny}`)) continue;
+          const ref = cur.ref || (s.tanker && nx === s.tanker.x && ny === s.tanker.y);
+          const k = key(nx, ny, ref);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          queue.push({ x: nx, y: ny, ref, steps: [...cur.steps, dir] });
+        }
+      }
+      assert.ok(path, 'threat plot solvable');
+      for (const dir of path) {
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'step', dir } });
         await wait(100);
       }
-    } else if (m.type === 'comms') {
-      for (const r of s.rounds) {
-        defuser.emit('module:action', { moduleId: m.id, action: { type: 'tune', freq: r.answerNet } });
-        await wait(100);
-        defuser.emit('module:action', { moduleId: m.id, action: { type: 'respond', letter: r.answerAuth } });
+    } else if (m.type === 'brevity') {
+      for (const st of s.stages) {
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'press', label: st.answer } });
         await wait(100);
       }
     }
