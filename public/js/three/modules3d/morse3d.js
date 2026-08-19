@@ -1,9 +1,11 @@
-/** Morse Code — glass dome lamp with a real light source, tuning knob, TX key. */
+/** Morse Code — glass dome lamp, delayed start, RST / SND / TX, tuning knob. */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { CanvasTex, displayMaterial, drawReadout, drawLabel, labelMaterial } from '../textUtil.js';
+import { sound } from '../../sound.js';
 
 const UNIT = 0.22; // seconds per morse unit
+const START_DELAY = 5; // stay dark after the round begins
 
 function buildTimeline(pattern) {
   const events = [];
@@ -19,11 +21,26 @@ function buildTimeline(pattern) {
   return events.map((e) => ({ ...e, start: t, end: (t += e.dur) }));
 }
 
+function faceButton(label, { x, z = 0.09, w = 0.05, d = 0.038, bg, color = '#000000', face, side }) {
+  const tex = new CanvasTex(160, 96);
+  tex.draw((ctx, cw, ch) => drawLabel(ctx, cw, ch, label, { bg, color }));
+  const sideMat = new THREE.MeshStandardMaterial({ color: side, roughness: 0.5, metalness: 0.15 });
+  const btn = new THREE.Mesh(new RoundedBoxGeometry(w, 0.026, d, 2, 0.007),
+    [sideMat, sideMat, labelMaterial(tex), sideMat, sideMat, sideMat]);
+  btn.position.set(x, 0.013, z);
+  btn.castShadow = true;
+  btn.userData.highlightTargets = [btn];
+  btn.userData._tex = tex;
+  btn.userData._paint = (text, fill) => {
+    tex.draw((ctx, cw, ch) => drawLabel(ctx, cw, ch, text, { bg: fill, color }));
+  };
+  return btn;
+}
+
 export function build({ view, send }) {
   const group = new THREE.Group();
-  const state = { selected: view.selected, freqs: view.frequencies, done: false };
+  const state = { selected: view.selected, freqs: view.frequencies, done: false, audio: false };
 
-  // lamp base + glass dome + bulb
   const base = new THREE.Mesh(
     new THREE.CylinderGeometry(0.05, 0.056, 0.018, 24),
     new THREE.MeshStandardMaterial({ color: 0x3a3f4a, metalness: 0.7, roughness: 0.4 })
@@ -50,10 +67,8 @@ export function build({ view, send }) {
 
   const lampLight = new THREE.PointLight(0xffc83d, 0, 0.7, 2);
   lampLight.position.set(0, 0.05, -0.08);
-
   group.add(base, bulb, dome, lampLight);
 
-  // frequency readout
   const freqTex = new CanvasTex(512, 128);
   const freqScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.042), displayMaterial(freqTex));
   freqScreen.rotation.x = -Math.PI / 2;
@@ -64,7 +79,6 @@ export function build({ view, send }) {
   freqHousing.castShadow = true;
   group.add(freqHousing, freqScreen);
 
-  // tuning knob — same hardware as Weapons Release station select
   const knob = new THREE.Mesh(
     new THREE.CylinderGeometry(0.02, 0.024, 0.022, 20),
     new THREE.MeshStandardMaterial({ color: 0x9aa2b5, metalness: 0.85, roughness: 0.3 })
@@ -73,7 +87,7 @@ export function build({ view, send }) {
     new THREE.MeshStandardMaterial({ color: 0x16181d }));
   notch.position.set(0, 0.012, -0.006);
   knob.add(notch);
-  knob.position.set(-0.07, 0.011, 0.09);
+  knob.position.set(-0.108, 0.011, 0.09);
   knob.castShadow = true;
   const QUARTER = Math.PI / 2;
   let knobTarget = 0;
@@ -92,37 +106,52 @@ export function build({ view, send }) {
   knob.userData.highlightTargets = [knob];
   group.add(knob);
 
-  const arrowGeo = new RoundedBoxGeometry(0.026, 0.018, 0.03, 2, 0.005);
-  const arrows = [];
-  [['<', -0.112, -1], ['>', -0.028, +1]].forEach(([label, x, dir]) => {
-    const tex = new CanvasTex(96, 96);
-    tex.draw((ctx, w, h) => drawLabel(ctx, w, h, label, { bg: '#cfd6e4' }));
-    const sideMat = new THREE.MeshStandardMaterial({ color: 0x32384a, roughness: 0.55, metalness: 0.2 });
-    const btn = new THREE.Mesh(arrowGeo, [sideMat, sideMat, labelMaterial(tex), sideMat, sideMat, sideMat]);
-    btn.position.set(x, 0.009, 0.09);
-    btn.castShadow = true;
-    btn.userData.onClick = () => tuneTo(state.selected + dir);
-    btn.userData.highlightTargets = [btn];
-    group.add(btn);
-    arrows.push(btn);
+  const snd = faceButton('SND', {
+    x: -0.038, bg: '#cfd6e4', side: 0x32384a
   });
+  function paintSnd() {
+    snd.userData._paint('SND', state.audio ? '#7dff9a' : '#cfd6e4');
+  }
+  snd.userData.onClick = () => {
+    state.audio = !state.audio;
+    paintSnd();
+    setLamp(lampOn);
+  };
+  group.add(snd);
 
-  // TX key
-  const txTex = new CanvasTex(160, 96);
-  txTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'TX', { bg: '#c43240', color: '#000000' }));
-  const txSide = new THREE.MeshStandardMaterial({ color: 0x8c1f2b, roughness: 0.5 });
-  const tx = new THREE.Mesh(new RoundedBoxGeometry(0.062, 0.026, 0.04, 2, 0.007),
-    [txSide, txSide, labelMaterial(txTex), txSide, txSide, txSide]);
-  tx.position.set(0.075, 0.013, 0.09);
-  tx.castShadow = true;
+  const rst = faceButton('RST', {
+    x: 0.028, bg: '#4a86d8', side: 0x1f4f8a
+  });
+  rst.userData.onClick = () => {
+    clock = 0;
+    setLamp(false);
+  };
+  group.add(rst);
+
+  const tx = faceButton('TX', {
+    x: 0.1, w: 0.052, bg: '#c43240', side: 0x8c1f2b
+  });
   tx.userData.onClick = () => send({ type: 'transmit' });
-  tx.userData.highlightTargets = [tx];
   group.add(tx);
 
-  // flash timeline
   const timeline = buildTimeline(view.pattern);
   const loopLen = timeline[timeline.length - 1].end;
-  let clock = 0;
+  let clock = -START_DELAY;
+  let lampOn = false;
+  let toneOn = false;
+
+  function setLamp(on) {
+    if (on !== lampOn) {
+      lampOn = on;
+      bulbMat.emissiveIntensity = on ? 2.2 : 0;
+      lampLight.intensity = on ? 1.6 : 0;
+    }
+    const want = on && state.audio && !state.done;
+    if (want !== toneOn) {
+      toneOn = want;
+      sound.morseTone(want);
+    }
+  }
 
   function redrawFreq() {
     freqTex.draw((ctx, w, h) =>
@@ -150,15 +179,17 @@ export function build({ view, send }) {
     }
     if (solved) {
       state.done = true;
-      bulbMat.emissiveIntensity = 0;
-      lampLight.intensity = 0;
+      setLamp(false);
       return;
     }
-    clock = (clock + dt) % loopLen;
+    clock += dt;
+    if (clock < 0) {
+      setLamp(false);
+      return;
+    }
+    clock = clock % loopLen;
     const ev = timeline.find((e) => clock >= e.start && clock < e.end);
-    const on = ev ? ev.on : false;
-    bulbMat.emissiveIntensity = on ? 2.2 : 0;
-    lampLight.intensity = on ? 1.6 : 0;
+    setLamp(!!(ev && ev.on));
   }
 
   redrawFreq();

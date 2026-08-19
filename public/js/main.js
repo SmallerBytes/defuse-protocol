@@ -16,12 +16,12 @@ const TIME_KEY = 'defuse-protocol.times';
 const STATS_KEY = 'defuse-protocol.stats';
 const FLY_KEY = 'defuse-protocol.fly';
 
-const DEFAULT_TIMES = { easy: 6 * 60 * 1000, normal: 5 * 60 * 1000, hard: 8 * 60 * 1000 };
+const DEFAULT_TIMES = { easy: 8 * 60 * 1000, normal: 10 * 60 * 1000, hard: 12 * 60 * 1000 };
 const DEFAULT_STRIKES = { easy: 3, normal: 3, hard: 2 };
 const STRIKE_KEY = 'defuse-protocol.strikes';
 const STRIKE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const TIME_VER_KEY = 'defuse-protocol.times.v';
-const OLD_HARD_MS = 3 * 60 * 1000;
+const PREV_STOCK_TIMES = { easy: 6 * 60 * 1000, normal: 5 * 60 * 1000, hard: 8 * 60 * 1000 };
 const TIME_OPTIONS_MS = [
   60 * 1000, 90 * 1000, 2 * 60 * 1000, 150 * 1000, 3 * 60 * 1000,
   4 * 60 * 1000, 5 * 60 * 1000, 6 * 60 * 1000, 7 * 60 * 1000,
@@ -126,9 +126,11 @@ function loadTimes() {
       normal: clampTime(raw.normal) ?? DEFAULT_TIMES.normal,
       hard: clampTime(raw.hard) ?? DEFAULT_TIMES.hard
     };
-    if (localStorage.getItem(TIME_VER_KEY) !== '2') {
-      if (times.hard === OLD_HARD_MS) times.hard = DEFAULT_TIMES.hard;
-      localStorage.setItem(TIME_VER_KEY, '2');
+    if (localStorage.getItem(TIME_VER_KEY) !== '3') {
+      if (times.easy === PREV_STOCK_TIMES.easy) times.easy = DEFAULT_TIMES.easy;
+      if (times.normal === PREV_STOCK_TIMES.normal) times.normal = DEFAULT_TIMES.normal;
+      if (times.hard === PREV_STOCK_TIMES.hard) times.hard = DEFAULT_TIMES.hard;
+      localStorage.setItem(TIME_VER_KEY, '3');
       saveTimes(times);
     }
     return times;

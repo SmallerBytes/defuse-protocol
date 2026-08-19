@@ -247,7 +247,23 @@ export const sound = {
     noise({ dur: 0.06, gain: 0.18 });
     tone({ freq: 140, dur: 0.09, type: 'sawtooth', gain: 0.09 });
   },
-  morse(on) { if (on) tone({ freq: 750, dur: 0.09, type: 'sine', gain: 0.05 }); },
+  morseTone(on) {
+    const a = ac();
+    if (!a._morse) {
+      const osc = a.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 680;
+      const g = a.createGain();
+      g.gain.value = 0.0001;
+      osc.connect(g).connect(a.destination);
+      osc.start();
+      a._morse = { g };
+    }
+    const now = a.currentTime;
+    a._morse.g.gain.cancelScheduledValues(now);
+    a._morse.g.gain.setTargetAtTime(on ? 0.055 : 0.0001, now, 0.01);
+  },
+  morse(on) { sound.morseTone(on); },
   win() {
     [523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, dur: 0.22, type: 'triangle', gain: 0.12, when: i * 0.15 }));
   },

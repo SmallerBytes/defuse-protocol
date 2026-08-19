@@ -64,8 +64,8 @@ Difficulty presets, straight from the game engine config.
 
 ```json
 [
-  { "key": "easy",   "moduleCount": 3, "timeMs": 360000, "maxStrikes": 3, "strikeAccel": 0.15 },
-  { "key": "normal", "moduleCount": 4, "timeMs": 300000, "maxStrikes": 3, "strikeAccel": 0.25 },
-  { "key": "hard",   "moduleCount": 5, "timeMs": 480000, "maxStrikes": 2, "strikeAccel": 0.4 }
+  { "key": "easy",   "moduleCount": 3, "timeMs": 480000, "maxStrikes": 3, "strikeAccel": 0.15 },
+  { "key": "normal", "moduleCount": 4, "timeMs": 600000, "maxStrikes": 3, "strikeAccel": 0.25 },
+  { "key": "hard",   "moduleCount": 5, "timeMs": 720000, "maxStrikes": 2, "strikeAccel": 0.4 }
 ]
 ```

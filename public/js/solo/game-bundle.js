@@ -475,7 +475,7 @@ var require_morse = __commonJS({
         Y: "-.--",
         Z: "--.."
       },
-      intro: "Decode the flashing signal letter by letter (a short gap separates dots/dashes within a letter; a longer gap separates letters; the word loops with a long pause). Find the decoded word in the frequency table, then have the Defuser tune to that frequency and transmit (TX).",
+      intro: "The lamp stays dark for a few seconds after the round starts, then flashes the word on a loop. A short gap separates dots/dashes within a letter; a longer gap separates letters; a long pause repeats the word. Press RST to restart from the first letter. Press SND to hear the tone with the lamp (lights still flash either way). Decode the word, find it in the frequency table, then have the Defuser tune to that frequency and transmit (TX).",
       baseFrequency: 3.505,
       frequencyStep: 5e-3,
       table: [
@@ -1401,9 +1401,9 @@ var require_game = __commonJS({
     var { Rng, randomSeed } = require_rng();
     var { getModule } = require_modules();
     var DIFFICULTY = {
-      easy: { moduleCount: 3, timeMs: 6 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.15 },
-      normal: { moduleCount: 4, timeMs: 5 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
-      hard: { moduleCount: 5, timeMs: 8 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
+      easy: { moduleCount: 3, timeMs: 8 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.15 },
+      normal: { moduleCount: 4, timeMs: 10 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
+      hard: { moduleCount: 5, timeMs: 12 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
     };
     var CLASSIC_MODULES = ["wires", "symbols", "memory", "morse", "logicgrid"];
     var HARD_MODULES = ["ordnance", "comms", "threatplot", "brevity"];
