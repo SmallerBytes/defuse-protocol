@@ -365,11 +365,15 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     onXRChange: null,
     onFlyChange: null,
     onFlyBuzz: null,
-    startGame(payload, send) {
+    startGame(payload, send, { fly: enableFly = true } = {}) {
       if (device) scene.remove(device.group);
       device = new Device(payload, send);
       scene.add(device.group);
-      fly.spawn();
+      if (enableFly) fly.spawn();
+      else {
+        fly.group.visible = false;
+        api.onFlyChange?.({ landed: false });
+      }
     },
     swatFly() {
       if (fly.squash()) {

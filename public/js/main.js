@@ -14,6 +14,7 @@ const QUALITY_KEY = 'defuse-protocol.quality';
 const DIFF_KEY = 'defuse-protocol.difficulty';
 const TIME_KEY = 'defuse-protocol.times';
 const STATS_KEY = 'defuse-protocol.stats';
+const FLY_KEY = 'defuse-protocol.fly';
 
 const DEFAULT_TIMES = { easy: 6 * 60 * 1000, normal: 5 * 60 * 1000, hard: 8 * 60 * 1000 };
 const DEFAULT_STRIKES = { easy: 3, normal: 3, hard: 2 };
@@ -218,14 +219,24 @@ function refreshDifficultyLabels() {
 function openSettings() {
   fillTimeSelects();
   fillStrikeSelects();
+  $('select-fly').value = loadFly() ? 'yes' : 'no';
   $('settings-overlay').classList.remove('hidden');
 }
 
 function closeSettings() {
   saveTimes(readTimesFromSelects());
   saveStrikes(readStrikesFromSelects());
+  saveFly($('select-fly').value === 'yes');
   refreshDifficultyLabels();
   $('settings-overlay').classList.add('hidden');
+}
+
+function loadFly() {
+  return localStorage.getItem(FLY_KEY) === '1';
+}
+
+function saveFly(on) {
+  localStorage.setItem(FLY_KEY, on ? '1' : '0');
 }
 
 function loadStats() {
@@ -349,7 +360,7 @@ function startMission({ enterVr = false } = {}) {
   scene.startGame(session.payload, (moduleId, action) => {
     sound.click();
     session.handleAction(moduleId, action);
-  });
+  }, { fly: loadFly() });
   updateSolved(0, session.payload.modules.length);
 
   show('game');
@@ -379,8 +390,10 @@ $('btn-settings-done')?.addEventListener('click', closeSettings);
 $('btn-settings-reset')?.addEventListener('click', () => {
   saveTimes({ ...DEFAULT_TIMES });
   saveStrikes({ ...DEFAULT_STRIKES });
+  saveFly(false);
   fillTimeSelects();
   fillStrikeSelects();
+  $('select-fly').value = 'no';
   refreshDifficultyLabels();
 });
 $('settings-overlay')?.addEventListener('click', (e) => {

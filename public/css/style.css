@@ -135,6 +135,26 @@ body {
   gap: 4px 12px;
   margin-bottom: 8px;
 }
+
+.settings-note {
+  margin: 12px 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.field-inline {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.field-inline span {
+  flex: 1;
+}
+.field-inline select {
+  width: auto;
+  min-width: 90px;
+}
 @media (max-width: 420px) {
   .settings-grid { grid-template-columns: 1fr; }
 }
