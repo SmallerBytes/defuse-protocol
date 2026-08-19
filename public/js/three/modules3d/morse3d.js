@@ -64,19 +64,32 @@ export function build({ view, send }) {
   freqHousing.castShadow = true;
   group.add(freqHousing, freqScreen);
 
-  // tuning knob + arrows
+  // tuning knob — same hardware as Weapons Release station select
   const knob = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.026, 0.03, 0.024, 24),
+    new THREE.CylinderGeometry(0.02, 0.024, 0.022, 20),
     new THREE.MeshStandardMaterial({ color: 0x9aa2b5, metalness: 0.85, roughness: 0.3 })
   );
-  const notch = new THREE.Mesh(
-    new THREE.BoxGeometry(0.004, 0.004, 0.024),
-    new THREE.MeshStandardMaterial({ color: 0x16181d })
-  );
-  notch.position.set(0, 0.013, -0.008);
+  const notch = new THREE.Mesh(new THREE.BoxGeometry(0.0035, 0.004, 0.02),
+    new THREE.MeshStandardMaterial({ color: 0x16181d }));
+  notch.position.set(0, 0.012, -0.006);
   knob.add(notch);
-  knob.position.set(-0.07, 0.012, 0.09);
+  knob.position.set(-0.07, 0.011, 0.09);
   knob.castShadow = true;
+  const QUARTER = Math.PI / 2;
+  let knobTarget = 0;
+  let knobAngle = 0;
+  let lastSel = view.selected || 0;
+  function tuneTo(index) {
+    const n = state.freqs.length;
+    const next = ((index % n) + n) % n;
+    if (next !== state.selected) send({ type: 'tune', index: next });
+  }
+  knob.userData.onClick = () => {
+    knobTarget += QUARTER;
+    lastSel = (lastSel + 1) % Math.max(1, state.freqs.length);
+    tuneTo(state.selected + 1);
+  };
+  knob.userData.highlightTargets = [knob];
   group.add(knob);
 
   const arrowGeo = new RoundedBoxGeometry(0.026, 0.018, 0.03, 2, 0.005);
@@ -88,10 +101,7 @@ export function build({ view, send }) {
     const btn = new THREE.Mesh(arrowGeo, [sideMat, sideMat, labelMaterial(tex), sideMat, sideMat, sideMat]);
     btn.position.set(x, 0.009, 0.09);
     btn.castShadow = true;
-    btn.userData.onClick = () => {
-      const next = Math.min(Math.max(state.selected + dir, 0), state.freqs.length - 1);
-      if (next !== state.selected) send({ type: 'tune', index: next });
-    };
+    btn.userData.onClick = () => tuneTo(state.selected + dir);
     btn.userData.highlightTargets = [btn];
     group.add(btn);
     arrows.push(btn);
@@ -117,15 +127,27 @@ export function build({ view, send }) {
   function redrawFreq() {
     freqTex.draw((ctx, w, h) =>
       drawReadout(ctx, w, h, state.freqs[state.selected].toFixed(3) + ' MHz', { color: '#ffd23f' }));
-    knob.rotation.y = -(state.selected / Math.max(1, state.freqs.length - 1)) * Math.PI * 1.5;
   }
 
   function update(v) {
     state.selected = v.selected;
+    const n = Math.max(1, state.freqs.length);
+    if (v.selected !== lastSel) {
+      let delta = v.selected - lastSel;
+      if (delta > n / 2) delta -= n;
+      if (delta < -n / 2) delta += n;
+      knobTarget += delta * QUARTER;
+      lastSel = v.selected;
+    }
     redrawFreq();
   }
 
   function tick(dt, _t, solved) {
+    if (Math.abs(knobTarget - knobAngle) > 0.001) {
+      const dir = Math.sign(knobTarget - knobAngle);
+      knobAngle += dir * Math.min(Math.abs(knobTarget - knobAngle), dt * 10);
+      knob.rotation.y = knobAngle;
+    }
     if (solved) {
       state.done = true;
       bulbMat.emissiveIntensity = 0;
