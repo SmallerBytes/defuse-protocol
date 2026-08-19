@@ -12,7 +12,11 @@ export function build({ view, send }) {
 
   view.symbols.forEach((s, i) => {
     const tex = new CanvasTex(160, 160);
-    tex.draw((ctx, w, h) => drawLabel(ctx, w, h, s.glyph, { font: `bold 110px 'Consolas', serif` }));
+    tex.draw((ctx, w, h) => drawLabel(ctx, w, h, s.glyph, {
+      font: `bold 110px 'Consolas', serif`,
+      color: '#4a453c',
+      stroke: false
+    }));
     const topMat = labelMaterial(tex);
     // per-cap side material so hover highlights don't bleed across caps
     const sideMat = new THREE.MeshStandardMaterial({ color: 0xd9d2ba, roughness: 0.6, metalness: 0.02 });
@@ -31,7 +35,9 @@ export function build({ view, send }) {
       const c = caps[i];
       c.tex.draw((ctx, w, h) => drawLabel(ctx, w, h, s.glyph, {
         bg: s.pressed ? '#9fe8bd' : '#e6e0cb',
-        font: `bold 110px 'Consolas', serif`
+        font: `bold 110px 'Consolas', serif`,
+        color: '#4a453c',
+        stroke: false
       }));
     });
   }

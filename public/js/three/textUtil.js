@@ -59,7 +59,7 @@ export function drawReadout(ctx, w, h, text, { color = '#39d98a', bg = '#04130a'
 }
 
 /** Draw a printed keycap/plate label (light background, dark text). */
-export function drawLabel(ctx, w, h, text, { bg = '#e6e0cb', color = '#000000', font = null } = {}) {
+export function drawLabel(ctx, w, h, text, { bg = '#e6e0cb', color = '#000000', font = null, stroke = true } = {}) {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
   ctx.font = font || `bold ${Math.floor(h * 0.6)}px 'Consolas', monospace`;
@@ -67,11 +67,13 @@ export function drawLabel(ctx, w, h, text, { bg = '#e6e0cb', color = '#000000', 
   ctx.textBaseline = 'middle';
   const x = w / 2;
   const y = h / 2 + h * 0.04;
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = Math.max(2, h * 0.045);
-  ctx.strokeText(text, x, y);
+  if (stroke) {
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2, h * 0.045);
+    ctx.strokeText(text, x, y);
+  }
   ctx.fillStyle = color;
   ctx.fillText(text, x, y);
 }
