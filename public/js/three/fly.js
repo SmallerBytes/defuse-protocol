@@ -14,7 +14,10 @@ const wingMat = new THREE.MeshStandardMaterial({
   depthWrite: false
 });
 
-const OFF = 0, INBOUND = 1, HARASS = 2, APPROACH = 3, LANDED = 4, FAN = 5, DEAD = 6, RESPAWN = 7;
+const OFF = 0, INBOUND = 1, HARASS = 2, APPROACH = 3, DESCEND = 4, LANDED = 5, FAN = 6, DEAD = 7, RESPAWN = 8;
+
+/* Keep flight paths clear of the case instead of punching through it. */
+const CASE_HALF_X = 0.62, CASE_HALF_Z = 0.46, CASE_CLEAR_Y = 0.32;
 
 export function createFly() {
   const group = new THREE.Group();
@@ -102,6 +105,16 @@ export function createFly() {
     dashSpeed = rand(1.5, 2.3);
   }
 
+  /** Stay out of the room for a while — showing up at t=0 gives it away. */
+  function arm(delay = rand(35, 75)) {
+    enabled = true;
+    mode = RESPAWN;
+    respawnT = delay;
+    group.visible = false;
+    group.scale.set(1, 1, 1);
+    vel.set(0, 0, 0);
+  }
+
   function spawn() {
     enabled = true;
     mode = INBOUND;
@@ -136,7 +149,7 @@ export function createFly() {
   }
 
   /** Steer toward `target`, integrate, and bank into the turn. */
-  function fly(dt, speed, force) {
+  function fly(dt, speed, force, clearCase = true) {
     desired.copy(target).sub(pos);
     const dist = desired.length();
     if (dist > 1e-5) desired.multiplyScalar(speed / dist);
@@ -144,6 +157,11 @@ export function createFly() {
     vel.addScaledVector(steer, dt);
     vel.clampLength(0, speed * 1.35);
     pos.addScaledVector(vel, dt);
+
+    if (clearCase && Math.abs(pos.x) < CASE_HALF_X && Math.abs(pos.z) < CASE_HALF_Z && pos.y < CASE_CLEAR_Y) {
+      pos.y = CASE_CLEAR_Y;
+      if (vel.y < 0) vel.y = 0;
+    }
     group.position.copy(pos);
 
     if (vel.lengthSq() > 1e-6) {
@@ -206,7 +224,7 @@ export function createFly() {
 
     if (mode === FAN && fanPos) {
       target.copy(fanPos);
-      const dist = fly(dt, 2.6, 14);
+      const dist = fly(dt, 2.6, 14, false);
       // extra suction so it visibly loses the fight near the intake
       tmp.copy(fanPos).sub(pos);
       vel.addScaledVector(tmp.normalize(), dt * (2.5 + 6 / Math.max(dist, 0.12)));
@@ -224,7 +242,7 @@ export function createFly() {
       crawlT -= dt;
       if (crawlT <= 0) {
         crawlT = rand(0.7, 2.2);
-        landOffset.set(rand(-0.085, 0.085), 0.005, rand(-0.03, 0.03));
+        landOffset.set(rand(-0.085, 0.085), 0.006, rand(-0.03, 0.03));
         crawlYaw = rand(-Math.PI, Math.PI);
       }
       tmp.copy(timerPos).add(landOffset);
@@ -238,11 +256,34 @@ export function createFly() {
       return { landed: true, alive: true };
     }
 
+    // Circle down to a hover directly over the readout, then drop straight in —
+    // steering all the way to the glass just overshoots and clips the case.
     if (mode === APPROACH && timerPos) {
       target.copy(timerPos).add(landOffset);
-      const dist = fly(dt, THREE.MathUtils.clamp(1.9 * dist01(pos, target), 0.35, 1.9), 11);
-      beatWings(dt, 78, 1.0);
-      if (dist < 0.02) {
+      target.y = timerPos.y + 0.13;
+      const dist = fly(dt, THREE.MathUtils.clamp(2.4 * dist01(pos, target), 0.5, 2.2), 12);
+      beatWings(dt, 80, 1.0);
+      if (dist < 0.05 || stateT > 4) {
+        mode = DESCEND;
+        stateT = 0;
+        vel.multiplyScalar(0.2);
+      }
+      return { landed: false, alive: true };
+    }
+
+    if (mode === DESCEND && timerPos) {
+      tmp.copy(timerPos).add(landOffset);
+      pos.x += (tmp.x - pos.x) * Math.min(1, dt * 6);
+      pos.z += (tmp.z - pos.z) * Math.min(1, dt * 6);
+      pos.y += (tmp.y - pos.y) * Math.min(1, dt * 4.5);
+      group.position.copy(pos);
+      faceQ.setFromAxisAngle(upV, crawlYaw);
+      group.quaternion.slerp(faceQ, Math.min(1, dt * 5));
+      rig.rotation.z *= Math.max(0, 1 - dt * 6);
+      beatWings(dt, 70, 0.85);
+      if (pos.distanceTo(tmp) < 0.008 || stateT > 1.6) {
+        pos.copy(tmp);
+        group.position.copy(pos);
         mode = LANDED;
         stateT = 0;
         crawlT = rand(0.6, 1.6);
@@ -274,7 +315,8 @@ export function createFly() {
     beatWings(dt, 86, 1.05);
 
     if (stateT > harassDur && timerPos) {
-      landOffset.set(rand(-0.07, 0.07), 0.005, rand(-0.025, 0.025));
+      landOffset.set(rand(-0.07, 0.07), 0.006, rand(-0.025, 0.025));
+      crawlYaw = rand(-Math.PI, Math.PI);
       mode = APPROACH;
       stateT = 0;
     }
@@ -287,10 +329,10 @@ export function createFly() {
 
   return {
     group,
+    arm,
     spawn,
     hide,
     tick,
-    get landed() { return mode === LANDED; },
-    get flying() { return mode === HARASS || mode === INBOUND || mode === APPROACH || mode === FAN; }
+    get landed() { return mode === LANDED; }
   };
 }

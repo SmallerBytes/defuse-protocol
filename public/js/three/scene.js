@@ -400,7 +400,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       scene.add(device.group);
       lastLanded = false;
       fan.setVisible(enableFly);
-      if (enableFly) fly.spawn();
+      if (enableFly) fly.arm();
       else {
         fly.hide();
         api.onFlyChange?.({ landed: false });
