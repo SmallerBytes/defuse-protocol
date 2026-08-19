@@ -1,7 +1,7 @@
-/** Threat Plot — radar scope grid (jet, SAMs, target, tanker) + N/E/S/W D-pad. */
+/** Threat Plot — radar scope grid (jet, SAMs, target, tanker) + horizontal arrow keys. */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { CanvasTex, displayMaterial, labelMaterial, drawLabel } from '../textUtil.js';
+import { CanvasTex, displayMaterial, labelMaterial } from '../textUtil.js';
 
 const COL_LETTERS = 'ABCDEFGH';
 function cellName(x, y) {
@@ -24,20 +24,47 @@ export function build({ view, send }) {
   scope.position.set(0, 0.0515, -0.047);
   group.add(scope);
 
-  // D-pad
-  const padGeo = new RoundedBoxGeometry(0.04, 0.018, 0.036, 2, 0.005);
+  // Compass keys in a single south-facing row: ← ↑ ↓ →
+  const padGeo = new RoundedBoxGeometry(0.052, 0.018, 0.04, 2, 0.005);
   const padDefs = [
-    ['N', 0, 0.048],
-    ['W', -0.052, 0.091],
-    ['E', 0.052, 0.091],
-    ['S', 0, 0.134]
+    ['W', -0.093],
+    ['N', -0.031],
+    ['S', 0.031],
+    ['E', 0.093]
   ];
-  for (const [dir, x, z] of padDefs) {
-    const tex = new CanvasTex(96, 96);
-    tex.draw((ctx, w, h) => drawLabel(ctx, w, h, dir, { bg: '#cfd6e4' }));
+  for (const [dir, x] of padDefs) {
+    const tex = new CanvasTex(128, 128);
+    tex.draw((ctx, w, h) => {
+      ctx.fillStyle = '#cfd6e4';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#000000';
+      const cx = w / 2;
+      const cy = h / 2 + 4;
+      const s = 38;
+      ctx.beginPath();
+      if (dir === 'N') {
+        ctx.moveTo(cx, cy - s);
+        ctx.lineTo(cx - s * 0.85, cy + s * 0.55);
+        ctx.lineTo(cx + s * 0.85, cy + s * 0.55);
+      } else if (dir === 'S') {
+        ctx.moveTo(cx, cy + s);
+        ctx.lineTo(cx - s * 0.85, cy - s * 0.55);
+        ctx.lineTo(cx + s * 0.85, cy - s * 0.55);
+      } else if (dir === 'W') {
+        ctx.moveTo(cx - s, cy);
+        ctx.lineTo(cx + s * 0.55, cy - s * 0.85);
+        ctx.lineTo(cx + s * 0.55, cy + s * 0.85);
+      } else {
+        ctx.moveTo(cx + s, cy);
+        ctx.lineTo(cx - s * 0.55, cy - s * 0.85);
+        ctx.lineTo(cx - s * 0.55, cy + s * 0.85);
+      }
+      ctx.closePath();
+      ctx.fill();
+    });
     const sideMat = new THREE.MeshStandardMaterial({ color: 0x32384a, roughness: 0.55, metalness: 0.2 });
     const btn = new THREE.Mesh(padGeo, [sideMat, sideMat, labelMaterial(tex), sideMat, sideMat, sideMat]);
-    btn.position.set(x, 0.009, z);
+    btn.position.set(x, 0.009, 0.108);
     btn.castShadow = true;
     btn.userData.onClick = () => send({ type: 'step', dir });
     btn.userData.highlightTargets = [btn];
