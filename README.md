@@ -66,6 +66,8 @@ The Node server under `server/` is optional legacy multiplayer code for local de
 | Memory Sequence | Random displays + shuffled labels                           | Fixed per-stage lookup rules                       |
 | Morse Code      | Random word flashed in Morse                                | Fixed alphabet + word→frequency table              |
 | Joint Functions | Captains × functions × phases (SOS)                        | Fixed roster; notes on table clipboard             |
+| Weapons Release | Target cards (moving/urban/hardened/weather)               | Fixed weaponeering rules + weapons rack            |
+| Radio Net       | Callsigns + letter-pair challenges                          | Fixed comms annex + authentication table           |
 
 The **manual is permanent**. Only the bomb layout is random each game (replayable via seed).
 
@@ -75,7 +77,10 @@ The **manual is permanent**. Only the bomb layout is random each game (replayabl
 | ---------- | ------- | ---- | ------- | ---------------------- |
 | Easy       | 3       | 6:00 | 3       | +15%                   |
 | Normal     | 5       | 5:00 | 3       | +25%                   |
-| Hard       | 5       | 3:30 | 2       | +35%                   |
+| Hard       | 5       | 3:00 | 2       | +40%                   |
+
+Hard always includes **Weapons Release** and **Radio Net** and three Joint
+Functions questions; Easy keeps to the classic module set.
 
 ## Project Structure
 

@@ -9,8 +9,10 @@ const { getModule, MODULES } = require('./modules');
 const DIFFICULTY = {
   easy:   { moduleCount: 3, timeMs: 6 * 60 * 1000,   maxStrikes: 3, strikeAccel: 0.15 },
   normal: { moduleCount: 5, timeMs: 5 * 60 * 1000,   maxStrikes: 3, strikeAccel: 0.25 },
-  hard:   { moduleCount: 5, timeMs: 3.5 * 60 * 1000, maxStrikes: 2, strikeAccel: 0.35 }
+  hard:   { moduleCount: 5, timeMs: 3 * 60 * 1000,   maxStrikes: 2, strikeAccel: 0.4 }
 };
+
+const HARD_REQUIRED = ['ordnance', 'comms'];
 
 function makeSerial(rng) {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -40,8 +42,16 @@ class Game {
     this.status = 'running'; // running | won | lost
     this.startedAt = Date.now();
 
-    // Pick module types: every type once if count allows, random subset otherwise.
-    const types = rng.shuffle(MODULES.map((m) => m.type)).slice(0, this.config.moduleCount);
+    // Pick module types. Hard always includes the demanding AF modules;
+    // easy keeps to the classic five for a gentler intro.
+    const allTypes = MODULES.map((m) => m.type);
+    let types;
+    if (this.difficulty === 'hard') {
+      const rest = rng.shuffle(allTypes.filter((t) => !HARD_REQUIRED.includes(t)));
+      types = rng.shuffle([...HARD_REQUIRED, ...rest.slice(0, this.config.moduleCount - HARD_REQUIRED.length)]);
+    } else {
+      types = rng.shuffle(allTypes).slice(0, this.config.moduleCount);
+    }
     this.modules = types.map((type, i) => {
       const mod = getModule(type);
       const ctx = { rng: rng.child(`${type}#${i}`), difficulty: this.difficulty, serial: this.serial };

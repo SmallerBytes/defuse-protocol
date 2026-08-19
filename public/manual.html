@@ -123,6 +123,24 @@
     </ol>
   </div>
 
+  <div class="sheet" id="sec-ordnance">
+    <h2>6. Weapons Release</h2>
+    <p id="ordnance-intro"></p>
+    <h3>Weapons rack</h3>
+    <table id="ordnance-weapons"><thead><tr><th>Weapon</th><th>Description</th></tr></thead><tbody></tbody></table>
+    <h3>Weaponeering rules (apply in order)</h3>
+    <ol id="ordnance-rules"></ol>
+  </div>
+
+  <div class="sheet" id="sec-comms">
+    <h2>7. Radio Net &amp; Authentication</h2>
+    <p id="comms-intro"></p>
+    <h3>Comms annex (callsign → net)</h3>
+    <table id="comms-nets"><thead><tr><th>Callsign</th><th>Net</th><th>Freq (MHz)</th></tr></thead><tbody></tbody></table>
+    <h3>Authentication table</h3>
+    <table id="comms-auth"><thead><tr><th>Challenge</th><th>Response</th></tr></thead><tbody></tbody></table>
+  </div>
+
   <script type="module">
     const ORDINALS = ['first', 'second', 'third', 'fourth'];
     function insText(ins) {
@@ -135,12 +153,14 @@
       }
     }
 
-    const [wires, symbols, memory, morse, logic] = await Promise.all([
+    const [wires, symbols, memory, morse, logic, ordnance, comms] = await Promise.all([
       fetch('data/modules/wires.json').then((r) => r.json()),
       fetch('data/modules/symbols.json').then((r) => r.json()),
       fetch('data/modules/memory.json').then((r) => r.json()),
       fetch('data/modules/morse.json').then((r) => r.json()),
-      fetch('data/modules/logicgrid.json').then((r) => r.json())
+      fetch('data/modules/logicgrid.json').then((r) => r.json()),
+      fetch('data/modules/ordnance.json').then((r) => r.json()),
+      fetch('data/modules/comms.json').then((r) => r.json())
     ]);
 
     document.getElementById('wires-intro').textContent = wires.intro;
@@ -202,6 +222,34 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${logic.engineers[i]}</td><td>${logic.panels[i]}</td><td>${logic.shifts[i]}</td>`;
       rbody.appendChild(tr);
+    }
+
+    document.getElementById('ordnance-intro').textContent = ordnance.intro;
+    const wbody = document.querySelector('#ordnance-weapons tbody');
+    for (const w of ordnance.weapons) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${w.id}</b></td><td>${w.desc}</td>`;
+      wbody.appendChild(tr);
+    }
+    const oRules = document.getElementById('ordnance-rules');
+    for (const rule of ordnance.rules) {
+      const li = document.createElement('li');
+      li.textContent = rule;
+      oRules.appendChild(li);
+    }
+
+    document.getElementById('comms-intro').textContent = comms.intro;
+    const nbody = document.querySelector('#comms-nets tbody');
+    for (const c of comms.callsigns) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${c.call}</b></td><td>${c.net}</td><td>${c.freq}</td>`;
+      nbody.appendChild(tr);
+    }
+    const abody = document.querySelector('#comms-auth tbody');
+    for (const a of comms.auth) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${a.challenge}</b></td><td><b>${a.response}</b></td>`;
+      abody.appendChild(tr);
     }
   </script>
 </body>

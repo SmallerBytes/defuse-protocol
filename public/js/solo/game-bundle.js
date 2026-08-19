@@ -577,7 +577,7 @@ var require_logicgrid = __commonJS({
       questionsByDifficulty: {
         easy: 1,
         normal: 2,
-        hard: 2
+        hard: 3
       },
       intro: "Three captains each own one joint function and lead one planning phase (no two share either). This roster mirrors joint-function thinking used in Squadron Officer School. The Defuser reads intercepted notes from the clipboard on the table, then answers the question on the device.",
       rosterNote: "Roster is always the same. Only the intercepted notes and the device question change between games."
@@ -782,6 +782,230 @@ var require_logicgrid2 = __commonJS({
   }
 });
 
+// data/modules/ordnance.json
+var require_ordnance = __commonJS({
+  "data/modules/ordnance.json"(exports, module) {
+    module.exports = {
+      weapons: [
+        { id: "GBU-12", desc: "500 lb laser-guided bomb (LGB)" },
+        { id: "GBU-31", desc: "2000 lb JDAM, penetrator" },
+        { id: "GBU-38", desc: "500 lb JDAM, low collateral" },
+        { id: "AGM-65", desc: "Maverick air-to-ground missile" }
+      ],
+      targetsByDifficulty: {
+        easy: 1,
+        normal: 2,
+        hard: 3
+      },
+      movingTargets: ["T-72 COLUMN", "ARMOR CONVOY", "SCUD TEL"],
+      staticTargets: ["RADAR SITE", "C2 BUNKER", "SUPPLY DEPOT", "HQ BUILDING", "SAM SITE"],
+      intro: "A targeting pod displays a target card (target, movement, location, weather). Rack the correct weapon for the target using the weaponeering rules below, then the Defuser presses that weapon to release it. A wrong release is a strike and the target card stays up. Clear every target card to disarm the module.",
+      rules: [
+        "If the target is MOVING, release AGM-65.",
+        "Otherwise, if the target is URBAN (collateral must stay LOW), release GBU-38.",
+        "Otherwise, if the target is HARDENED, release GBU-31.",
+        "Otherwise, if weather is CLEAR, release GBU-12.",
+        "Otherwise (static, non-urban, soft, weather IMC), release GBU-31."
+      ]
+    };
+  }
+});
+
+// server/modules/ordnance.js
+var require_ordnance2 = __commonJS({
+  "server/modules/ordnance.js"(exports, module) {
+    var data = require_ordnance();
+    var TYPE = "ordnance";
+    var NAME = "Weapons Release";
+    function answerFor(attrs) {
+      if (attrs.moving) return "AGM-65";
+      if (attrs.urban) return "GBU-38";
+      if (attrs.hardened) return "GBU-31";
+      if (attrs.wx === "CLEAR") return "GBU-12";
+      return "GBU-31";
+    }
+    function makeTarget(rng) {
+      const intended = rng.pick(["GBU-12", "GBU-31", "GBU-38", "AGM-65", "GBU-31"]);
+      const attrs = { moving: false, urban: false, hardened: false, wx: rng.pick(["CLEAR", "IMC"]) };
+      switch (intended) {
+        case "AGM-65":
+          attrs.moving = true;
+          attrs.urban = rng.float() < 0.35;
+          attrs.hardened = rng.float() < 0.3;
+          break;
+        case "GBU-38":
+          attrs.urban = true;
+          attrs.hardened = rng.float() < 0.4;
+          break;
+        case "GBU-12":
+          attrs.wx = "CLEAR";
+          break;
+        default:
+          if (rng.float() < 0.5) attrs.hardened = true;
+          else attrs.wx = "IMC";
+          break;
+      }
+      const name = attrs.moving ? rng.pick(data.movingTargets) : rng.pick(data.staticTargets);
+      return { name, attrs, answer: answerFor(attrs) };
+    }
+    function describe(t) {
+      const a = t.attrs;
+      return [
+        t.name,
+        a.moving ? "MOVING" : "STATIC",
+        a.urban ? "URBAN" : "OPEN TERRAIN",
+        a.hardened ? "HARDENED" : "SOFT",
+        `WX ${a.wx}`
+      ].join(" \xB7 ");
+    }
+    function fixedManual() {
+      return {
+        intro: data.intro,
+        rules: data.rules,
+        weapons: data.weapons
+      };
+    }
+    function generate(ctx) {
+      const { rng, difficulty } = ctx;
+      const count = data.targetsByDifficulty[difficulty];
+      const targets = Array.from({ length: count }, () => makeTarget(rng));
+      const state = { targets, index: 0 };
+      return { state, manual: fixedManual(), view: view(state) };
+    }
+    function view(state) {
+      const t = state.targets[state.index];
+      return {
+        index: state.index + 1,
+        total: state.targets.length,
+        card: t ? describe(t) : null,
+        weapons: data.weapons.map((w) => w.id)
+      };
+    }
+    function action(state, act) {
+      if (act.type !== "release") return { status: "ok", view: view(state) };
+      const t = state.targets[state.index];
+      if (!t || !data.weapons.some((w) => w.id === act.weapon)) return { status: "ok", view: view(state) };
+      if (act.weapon === t.answer) {
+        state.index++;
+        if (state.index >= state.targets.length) {
+          return { status: "solved", view: view(state), detail: "all targets serviced" };
+        }
+        return { status: "ok", view: view(state), detail: "target destroyed" };
+      }
+      return { status: "strike", view: view(state), detail: `wrong weapon ${act.weapon}, expected ${t.answer}` };
+    }
+    module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };
+  }
+});
+
+// data/modules/comms.json
+var require_comms = __commonJS({
+  "data/modules/comms.json"(exports, module) {
+    module.exports = {
+      callsigns: [
+        { call: "VIPER 21", net: "AWACS CHECK-IN", freq: "251.00" },
+        { call: "HAVOC 11", net: "TACTICAL", freq: "234.50" },
+        { call: "PYTHON 31", net: "STRIKE", freq: "305.25" },
+        { call: "COBRA 05", net: "AIRBORNE ALERT", freq: "288.75" },
+        { call: "MUSTANG 41", net: "GUARD", freq: "243.00" },
+        { call: "RAGE 12", net: "TANKER", freq: "279.40" }
+      ],
+      auth: [
+        { challenge: "A\xB7L", response: "M" },
+        { challenge: "B\xB7K", response: "T" },
+        { challenge: "C\xB7S", response: "R" },
+        { challenge: "D\xB7M", response: "J" },
+        { challenge: "E\xB7T", response: "P" },
+        { challenge: "F\xB7R", response: "S" },
+        { challenge: "G\xB7J", response: "L" },
+        { challenge: "H\xB7P", response: "B" }
+      ],
+      roundsByDifficulty: {
+        easy: 1,
+        normal: 1,
+        hard: 2
+      },
+      intro: "Each round has two steps. Step 1 (NET): the device shows a callsign and four frequencies \u2014 tune the net listed for that callsign in the comms annex. Step 2 (AUTH): the device shows a two-letter challenge \u2014 reply with the response letter from the authentication table. A wrong step is a strike and the step stays up. Complete every round to disarm the module."
+    };
+  }
+});
+
+// server/modules/comms.js
+var require_comms2 = __commonJS({
+  "server/modules/comms.js"(exports, module) {
+    var data = require_comms();
+    var TYPE = "comms";
+    var NAME = "Radio Net";
+    function fixedManual() {
+      return {
+        intro: data.intro,
+        callsigns: data.callsigns,
+        auth: data.auth
+      };
+    }
+    function generate(ctx) {
+      const { rng, difficulty } = ctx;
+      const roundsWanted = data.roundsByDifficulty[difficulty];
+      const calls = rng.shuffle(data.callsigns.slice()).slice(0, roundsWanted);
+      const challenges = rng.shuffle(data.auth.slice()).slice(0, roundsWanted);
+      const rounds = calls.map((c, i) => {
+        const wrongFreqs = rng.shuffle(data.callsigns.filter((o) => o.freq !== c.freq)).slice(0, 3);
+        const netOptions = rng.shuffle([c, ...wrongFreqs]).map((o) => o.freq);
+        const ch = challenges[i];
+        const wrongLetters = rng.shuffle(data.auth.filter((o) => o.response !== ch.response)).slice(0, 3);
+        const authOptions = rng.shuffle([ch, ...wrongLetters]).map((o) => o.response);
+        return {
+          call: c.call,
+          netOptions,
+          answerNet: c.freq,
+          challenge: ch.challenge,
+          authOptions,
+          answerAuth: ch.response
+        };
+      });
+      const state = { rounds, round: 0, phase: "net" };
+      return { state, manual: fixedManual(), view: view(state) };
+    }
+    function view(state) {
+      const r = state.rounds[state.round];
+      if (!r) return { round: state.round + 1, total: state.rounds.length, phase: "done", prompt: null, options: [] };
+      return {
+        round: state.round + 1,
+        total: state.rounds.length,
+        phase: state.phase,
+        prompt: state.phase === "net" ? r.call : r.challenge,
+        options: state.phase === "net" ? r.netOptions : r.authOptions
+      };
+    }
+    function action(state, act) {
+      const r = state.rounds[state.round];
+      if (!r) return { status: "ok", view: view(state) };
+      if (act.type === "tune" && state.phase === "net") {
+        if (!r.netOptions.includes(act.freq)) return { status: "ok", view: view(state) };
+        if (act.freq === r.answerNet) {
+          state.phase = "auth";
+          return { status: "ok", view: view(state), detail: "net established" };
+        }
+        return { status: "strike", view: view(state), detail: `wrong net ${act.freq}, expected ${r.answerNet}` };
+      }
+      if (act.type === "respond" && state.phase === "auth") {
+        if (!r.authOptions.includes(act.letter)) return { status: "ok", view: view(state) };
+        if (act.letter === r.answerAuth) {
+          state.round++;
+          state.phase = "net";
+          if (state.round >= state.rounds.length) {
+            return { status: "solved", view: view(state), detail: "all nets authenticated" };
+          }
+          return { status: "ok", view: view(state), detail: "authentication valid" };
+        }
+        return { status: "strike", view: view(state), detail: `bad auth ${act.letter}, expected ${r.answerAuth}` };
+      }
+      return { status: "ok", view: view(state) };
+    }
+    module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };
+  }
+});
+
 // server/modules/index.js
 var require_modules = __commonJS({
   "server/modules/index.js"(exports, module) {
@@ -790,7 +1014,9 @@ var require_modules = __commonJS({
     var memory = require_memory2();
     var morse = require_morse2();
     var logicgrid = require_logicgrid2();
-    var MODULES = [wires, symbols, memory, morse, logicgrid];
+    var ordnance = require_ordnance2();
+    var comms = require_comms2();
+    var MODULES = [wires, symbols, memory, morse, logicgrid, ordnance, comms];
     var registry = new Map(MODULES.map((m) => [m.type, m]));
     function getModule(type) {
       const mod = registry.get(type);
@@ -812,8 +1038,9 @@ var require_game = __commonJS({
     var DIFFICULTY = {
       easy: { moduleCount: 3, timeMs: 6 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.15 },
       normal: { moduleCount: 5, timeMs: 5 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
-      hard: { moduleCount: 5, timeMs: 3.5 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.35 }
+      hard: { moduleCount: 5, timeMs: 3 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
     };
+    var HARD_REQUIRED = ["ordnance", "comms"];
     function makeSerial(rng) {
       const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
       const digits = "0123456789";
@@ -835,7 +1062,14 @@ var require_game = __commonJS({
         this.remainingMs = this.config.timeMs;
         this.status = "running";
         this.startedAt = Date.now();
-        const types = rng.shuffle(MODULES.map((m) => m.type)).slice(0, this.config.moduleCount);
+        const allTypes = MODULES.map((m) => m.type);
+        let types;
+        if (this.difficulty === "hard") {
+          const rest = rng.shuffle(allTypes.filter((t) => !HARD_REQUIRED.includes(t)));
+          types = rng.shuffle([...HARD_REQUIRED, ...rest.slice(0, this.config.moduleCount - HARD_REQUIRED.length)]);
+        } else {
+          types = rng.shuffle(allTypes).slice(0, this.config.moduleCount);
+        }
         this.modules = types.map((type, i) => {
           const mod = getModule(type);
           const ctx = { rng: rng.child(`${type}#${i}`), difficulty: this.difficulty, serial: this.serial };

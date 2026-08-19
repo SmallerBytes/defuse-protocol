@@ -15,7 +15,7 @@
   "questionsByDifficulty": {
     "easy": 1,
     "normal": 2,
-    "hard": 2
+    "hard": 3
   },
   "intro": "Three captains each own one joint function and lead one planning phase (no two share either). This roster mirrors joint-function thinking used in Squadron Officer School. The Defuser reads intercepted notes from the clipboard on the table, then answers the question on the device.",
   "rosterNote": "Roster is always the same. Only the intercepted notes and the device question change between games."

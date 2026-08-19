@@ -103,6 +103,18 @@ async function main() {
         defuser.emit('module:action', { moduleId: m.id, action: { type: 'answer', option: q.answer } });
         await wait(100);
       }
+    } else if (m.type === 'ordnance') {
+      for (const t of s.targets) {
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'release', weapon: t.answer } });
+        await wait(100);
+      }
+    } else if (m.type === 'comms') {
+      for (const r of s.rounds) {
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'tune', freq: r.answerNet } });
+        await wait(100);
+        defuser.emit('module:action', { moduleId: m.id, action: { type: 'respond', letter: r.answerAuth } });
+        await wait(100);
+      }
     }
     await wait(150);
   }

@@ -89,6 +89,34 @@ function solveModule(mod, state) {
       assert.strictEqual(r.status, 'solved');
       break;
     }
+    case 'ordnance': {
+      let r = { status: 'ok' };
+      let guard = 0;
+      while (r.status !== 'solved' && guard++ < 10) {
+        const t = state.targets[state.index];
+        assert.ok(t, 'target present');
+        r = mod.action(state, { type: 'release', weapon: t.answer }, ctx);
+        assert.notStrictEqual(r.status, 'strike');
+      }
+      assert.strictEqual(r.status, 'solved');
+      break;
+    }
+    case 'comms': {
+      let r = { status: 'ok' };
+      let guard = 0;
+      while (r.status !== 'solved' && guard++ < 20) {
+        const round = state.rounds[state.round];
+        assert.ok(round, 'round present');
+        if (state.phase === 'net') {
+          r = mod.action(state, { type: 'tune', freq: round.answerNet }, ctx);
+        } else {
+          r = mod.action(state, { type: 'respond', letter: round.answerAuth }, ctx);
+        }
+        assert.notStrictEqual(r.status, 'strike');
+      }
+      assert.strictEqual(r.status, 'solved');
+      break;
+    }
     default:
       throw new Error(`smoke test missing solver for ${mod.type}`);
   }

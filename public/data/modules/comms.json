@@ -1,0 +1,26 @@
+{
+  "callsigns": [
+    { "call": "VIPER 21", "net": "AWACS CHECK-IN", "freq": "251.00" },
+    { "call": "HAVOC 11", "net": "TACTICAL", "freq": "234.50" },
+    { "call": "PYTHON 31", "net": "STRIKE", "freq": "305.25" },
+    { "call": "COBRA 05", "net": "AIRBORNE ALERT", "freq": "288.75" },
+    { "call": "MUSTANG 41", "net": "GUARD", "freq": "243.00" },
+    { "call": "RAGE 12", "net": "TANKER", "freq": "279.40" }
+  ],
+  "auth": [
+    { "challenge": "A·L", "response": "M" },
+    { "challenge": "B·K", "response": "T" },
+    { "challenge": "C·S", "response": "R" },
+    { "challenge": "D·M", "response": "J" },
+    { "challenge": "E·T", "response": "P" },
+    { "challenge": "F·R", "response": "S" },
+    { "challenge": "G·J", "response": "L" },
+    { "challenge": "H·P", "response": "B" }
+  ],
+  "roundsByDifficulty": {
+    "easy": 1,
+    "normal": 1,
+    "hard": 2
+  },
+  "intro": "Each round has two steps. Step 1 (NET): the device shows a callsign and four frequencies — tune the net listed for that callsign in the comms annex. Step 2 (AUTH): the device shows a two-letter challenge — reply with the response letter from the authentication table. A wrong step is a strike and the step stays up. Complete every round to disarm the module."
+}
