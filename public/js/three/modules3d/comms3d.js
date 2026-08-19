@@ -60,18 +60,18 @@ export function build({ view, send }) {
   }
 
   // Tuning row: coarse down, fine down, fine up, coarse up
-  makeButton('−1', -0.115, 0.012, '#cfd6e4', () => send({ type: 'tune', steps: -4 }));
-  makeButton('−¼', -0.068, 0.012, '#cfd6e4', () => send({ type: 'tune', steps: -1 }));
-  makeButton('+¼', -0.021, 0.012, '#cfd6e4', () => send({ type: 'tune', steps: 1 }));
-  makeButton('+1', 0.026, 0.012, '#cfd6e4', () => send({ type: 'tune', steps: 4 }));
+  makeButton('−1', -0.115, 0.052, '#cfd6e4', () => send({ type: 'tune', steps: -4 }));
+  makeButton('−¼', -0.068, 0.052, '#cfd6e4', () => send({ type: 'tune', steps: -1 }));
+  makeButton('+¼', -0.021, 0.052, '#cfd6e4', () => send({ type: 'tune', steps: 1 }));
+  makeButton('+1', 0.026, 0.052, '#cfd6e4', () => send({ type: 'tune', steps: 4 }));
 
   // XMIT (red, right of tuning row)
-  makeButton('XMIT', 0.095, 0.012, '#c43240', () => send({ type: 'xmit' }), true);
+  makeButton('XMIT', 0.095, 0.052, '#c43240', () => send({ type: 'xmit' }), true);
 
   // Letter row: down, up, AUTH
-  makeButton('A−', -0.09, 0.062, '#cfd6e4', () => send({ type: 'letter', delta: -1 }));
-  makeButton('A+', -0.043, 0.062, '#cfd6e4', () => send({ type: 'letter', delta: 1 }));
-  makeButton('AUTH', 0.095, 0.062, '#2f8a4a', () => send({ type: 'auth' }), true);
+  makeButton('A−', -0.09, 0.105, '#cfd6e4', () => send({ type: 'letter', delta: -1 }));
+  makeButton('A+', -0.043, 0.105, '#cfd6e4', () => send({ type: 'letter', delta: 1 }));
+  makeButton('AUTH', 0.095, 0.105, '#2f8a4a', () => send({ type: 'auth' }), true);
 
   function update(v) {
     let header;
