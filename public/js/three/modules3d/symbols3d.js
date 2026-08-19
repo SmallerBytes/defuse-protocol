@@ -1,9 +1,26 @@
 /** Symbol Matching — four physical keycaps with printed glyph legends. */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { CanvasTex, labelMaterial, drawLabel } from '../textUtil.js';
+import { CanvasTex, labelMaterial } from '../textUtil.js';
 
 const capGeo = new RoundedBoxGeometry(0.105, 0.038, 0.105, 3, 0.008);
+
+function paintGlyph(ctx, w, h, glyph, bg = '#e6e0cb') {
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.font = `100px 'Segoe UI Symbol', 'Cambria', 'Times New Roman', serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const x = w / 2;
+  const y = h / 2 + h * 0.03;
+  ctx.fillStyle = '#5a554c';
+  ctx.fillText(glyph, x, y);
+  // carve the edges so the glyph reads as a thin print, not a heavy fill
+  ctx.strokeStyle = bg;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 3.5;
+  ctx.strokeText(glyph, x, y);
+}
 
 export function build({ view, send }) {
   const group = new THREE.Group();
@@ -11,12 +28,8 @@ export function build({ view, send }) {
   const positions = [[-0.062, -0.062], [0.062, -0.062], [-0.062, 0.062], [0.062, 0.062]];
 
   view.symbols.forEach((s, i) => {
-    const tex = new CanvasTex(160, 160);
-    tex.draw((ctx, w, h) => drawLabel(ctx, w, h, s.glyph, {
-      font: `bold 110px 'Consolas', serif`,
-      color: '#4a453c',
-      stroke: false
-    }));
+    const tex = new CanvasTex(256, 256);
+    tex.draw((ctx, w, h) => paintGlyph(ctx, w, h, s.glyph));
     const topMat = labelMaterial(tex);
     // per-cap side material so hover highlights don't bleed across caps
     const sideMat = new THREE.MeshStandardMaterial({ color: 0xd9d2ba, roughness: 0.6, metalness: 0.02 });
@@ -33,12 +46,7 @@ export function build({ view, send }) {
   function update(v) {
     v.symbols.forEach((s, i) => {
       const c = caps[i];
-      c.tex.draw((ctx, w, h) => drawLabel(ctx, w, h, s.glyph, {
-        bg: s.pressed ? '#9fe8bd' : '#e6e0cb',
-        font: `bold 110px 'Consolas', serif`,
-        color: '#4a453c',
-        stroke: false
-      }));
+      c.tex.draw((ctx, w, h) => paintGlyph(ctx, w, h, s.glyph, s.pressed ? '#9fe8bd' : '#e6e0cb'));
     });
   }
 
