@@ -52,6 +52,11 @@ export const sound = {
     tone({ freq: 180, dur: 0.3, type: 'sawtooth', gain: 0.15, slide: -80 });
     noise({ dur: 0.2, gain: 0.1 });
   },
+  buzz() { tone({ freq: 190, dur: 0.2, type: 'sawtooth', gain: 0.03 }); },
+  squish() {
+    noise({ dur: 0.06, gain: 0.18 });
+    tone({ freq: 140, dur: 0.09, type: 'sawtooth', gain: 0.09 });
+  },
   morse(on) { if (on) tone({ freq: 750, dur: 0.09, type: 'sine', gain: 0.05 }); },
   win() {
     [523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, dur: 0.22, type: 'triangle', gain: 0.12, when: i * 0.15 }));

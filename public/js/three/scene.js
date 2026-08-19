@@ -13,6 +13,7 @@ import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Device } from './device.js';
+import { createFly } from './fly.js';
 import { attachXR } from './xr.js';
 
 export function createDeviceScene(container, initialQuality = 'medium') {
@@ -210,6 +211,10 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   let device = null;
   let downAt = null;
   let hovered = null;
+  const fly = createFly(() => api.swatFly());
+  fly.group.visible = false;
+  scene.add(fly.group);
+  let buzzT = 0;
 
   function castAt(e) {
     if (!device || renderer.xr.isPresenting) return null;
@@ -217,7 +222,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObjects(device.targets, false);
+    const targets = fly.group.visible ? [...device.targets, fly.hit] : device.targets;
+    const hits = raycaster.intersectObjects(targets, false);
     return hits.find((h) => h.object.userData.onClick) || null;
   }
 
@@ -259,7 +265,10 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     scene,
     camera,
     dolly,
-    getTargets: () => (device ? device.targets : []),
+    getTargets: () => {
+      const t = device ? device.targets : [];
+      return fly.group.visible ? [...t, fly.hit] : t;
+    },
     onSelect: (obj) => {
       if (obj.userData.onClick) obj.userData.onClick();
     },
@@ -309,6 +318,17 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     if (!presenting) controls.update();
     xr.tick(dt);
     if (device) device.tick(dt, t);
+    const landed = fly.tick(dt, t, !!(device && device.over));
+    if (landed) {
+      api.onFlyChange?.({ landed: true });
+      buzzT += dt;
+      if (buzzT >= 1.8) {
+        buzzT = 0;
+        api.onFlyBuzz?.();
+      }
+    } else {
+      buzzT = 0;
+    }
 
     if (!presenting && shake > 0.001) {
       controls.target.set(
@@ -343,10 +363,20 @@ export function createDeviceScene(container, initialQuality = 'medium') {
 
   const api = {
     onXRChange: null,
+    onFlyChange: null,
+    onFlyBuzz: null,
     startGame(payload, send) {
       if (device) scene.remove(device.group);
       device = new Device(payload, send);
       scene.add(device.group);
+      fly.spawn();
+    },
+    swatFly() {
+      if (fly.squash()) {
+        api.onFlyChange?.({ landed: false, squashed: true });
+        return true;
+      }
+      return false;
     },
     updateModule(id, view) { if (device) device.updateModule(id, view); },
     markSolved(id) {
@@ -369,6 +399,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     gameOver(won) {
       if (!device) return;
       device.gameOver(won);
+      fly.group.visible = false;
+      fly.tick(0, 0, true);
       fxLight.color.setHex(won ? 0x39d98a : 0xff2233);
       fxPulse = won ? 10 : 40;
       if (!won && !renderer.xr.isPresenting) shake = 2.5;

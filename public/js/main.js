@@ -285,6 +285,11 @@ function ensureScene() {
       document.body.classList.toggle('xr-presenting', presenting);
       $('btn-enter-vr').textContent = presenting ? 'EXIT VR' : 'ENTER VR';
     };
+    state.scene3d.onFlyChange = ({ landed, squashed }) => {
+      if (state.session?.game) state.session.game._fly(landed && !squashed);
+      if (squashed) sound.squish();
+    };
+    state.scene3d.onFlyBuzz = () => sound.buzz();
   } else {
     state.scene3d.setQuality(getQuality());
   }

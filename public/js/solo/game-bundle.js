@@ -1462,8 +1462,15 @@ var require_game = __commonJS({
         this._lastTick = Date.now();
         this._interval = setInterval(() => this._tick(), 500);
       }
+      _fly(landed) {
+        if (this.flyLanded === landed) return;
+        this.flyLanded = landed;
+        this.logger.log("fly", { landed });
+      }
       get timeScale() {
-        return 1 + this.strikes * this.config.strikeAccel;
+        let scale = 1 + this.strikes * this.config.strikeAccel;
+        if (this.flyLanded) scale += 0.5;
+        return scale;
       }
       _tick() {
         if (this.status !== "running") return;
