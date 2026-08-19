@@ -33,8 +33,9 @@ export function createFly() {
   }
   group.add(body, headMesh);
 
-  /* 0 hidden, 1 circling head, 2 landed, 3 dead, 4 sucked into fan */
+  /* 0 hidden, 1 circling head, 2 landed, 3 dead, 4 sucked into fan, 5 waiting to respawn */
   let mode = 0;
+  let enabled = false;
   let waitT = 0;
   let landT = 0;
   let deadT = 0;
@@ -52,18 +53,21 @@ export function createFly() {
   ];
 
   function spawn() {
+    enabled = true;
     mode = 1;
     waitT = 0;
     deadT = 0;
     landSpot = null;
     group.visible = true;
     group.scale.set(1, 1, 1);
+    group.rotation.set(0, 0, 0);
     a = Math.random() * Math.PI * 2;
     pos.set(0, 1.2, 1.1);
     group.position.copy(pos);
   }
 
   function hide() {
+    enabled = false;
     mode = 0;
     group.visible = false;
     landSpot = null;
@@ -95,15 +99,27 @@ export function createFly() {
   }
 
   function tick(dt, t, { gameOver, head, fanOn, fanPos } = {}) {
-    if (mode === 0) return { landed: false, alive: false };
     if (gameOver) {
       hide();
       return { landed: false, alive: false };
     }
+    if (!enabled && mode === 0) return { landed: false, alive: false };
+
     if (mode === 3) {
       deadT += dt;
       group.visible = deadT < 1.2;
-      if (deadT >= 1.2) mode = 0;
+      if (deadT >= 1.2) {
+        mode = 5;
+        waitT = 8 + Math.random() * 6;
+        group.visible = false;
+        group.scale.set(1, 1, 1);
+      }
+      return { landed: false, alive: false };
+    }
+
+    if (mode === 5) {
+      waitT -= dt;
+      if (waitT <= 0) spawn();
       return { landed: false, alive: false };
     }
 

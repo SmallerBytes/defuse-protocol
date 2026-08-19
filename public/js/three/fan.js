@@ -74,12 +74,11 @@ export function createDeskFan(onToggle) {
   );
   hit.position.set(0, 0.12, 0.03);
   hit.userData.onClick = () => {
-    until = 3.4;
-    if (!on) {
-      on = true;
-      ledMat.emissiveIntensity = 1.4;
-      onToggle?.(true);
-    }
+    if (on) return;
+    until = 3;
+    on = true;
+    ledMat.emissiveIntensity = 1.4;
+    onToggle?.(true);
   };
   hit.userData.highlightTargets = [btn, motor];
   group.add(hit);
