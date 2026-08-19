@@ -22,8 +22,8 @@ export function build({ view, send }) {
 
   /* ---- MASTER ARM lever (left) ---- */
   const armGroup = new THREE.Group();
-  armGroup.position.set(-0.105, 0, 0.05);
-  const armBase = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.016, 0.07, 2, 0.005),
+  armGroup.position.set(-0.105, 0, 0.012);
+  const armBase = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.016, 0.055, 2, 0.005),
     new THREE.MeshStandardMaterial({ color: 0x3a2a2a, roughness: 0.55, metalness: 0.3 }));
   armBase.position.y = 0.008;
   armBase.castShadow = true;
@@ -45,14 +45,14 @@ export function build({ view, send }) {
     color: 0x140a0a, emissive: 0xff3333, emissiveIntensity: 0, roughness: 0.3
   });
   const armLight = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.008, 12), armLightMat);
-  armLight.position.set(0, 0.018, -0.045);
+  armLight.position.set(0, 0.018, -0.032);
   armGroup.add(armLight);
 
   const armLabelTex = new CanvasTex(160, 64);
   armLabelTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'MASTER ARM', { bg: '#3a2a2a', color: '#e0d6c0', font: `bold 24px 'Consolas', monospace` }));
   const armLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.02), labelMaterial(armLabelTex));
   armLabel.rotation.x = -Math.PI / 2;
-  armLabel.position.set(0, 0.0165, 0.046);
+  armLabel.position.set(0, 0.0165, -0.038);
   armGroup.add(armLabel);
 
   // Oversized invisible hitbox so the lever is easy to grab in VR
@@ -68,10 +68,10 @@ export function build({ view, send }) {
   const stationTex = new CanvasTex(320, 96);
   const stationScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.026), displayMaterial(stationTex));
   stationScreen.rotation.x = -Math.PI / 2;
-  stationScreen.position.set(-0.015, 0.0205, 0.022);
+  stationScreen.position.set(-0.015, 0.0205, 0.012);
   const stationHousing = new THREE.Mesh(new RoundedBoxGeometry(0.095, 0.02, 0.036, 2, 0.005),
     new THREE.MeshStandardMaterial({ color: 0x20242c, roughness: 0.5, metalness: 0.3 }));
-  stationHousing.position.set(-0.015, 0.01, 0.022);
+  stationHousing.position.set(-0.015, 0.01, 0.012);
   stationHousing.castShadow = true;
   group.add(stationHousing, stationScreen);
 
@@ -83,7 +83,7 @@ export function build({ view, send }) {
     new THREE.MeshStandardMaterial({ color: 0x16181d }));
   notch.position.set(0, 0.012, -0.006);
   knob.add(notch);
-  knob.position.set(-0.015, 0.011, 0.062);
+  knob.position.set(-0.015, 0.011, 0.048);
   knob.castShadow = true;
   knob.userData.onClick = () => send({ type: 'station' });
   knob.userData.highlightTargets = [knob];
@@ -96,7 +96,7 @@ export function build({ view, send }) {
     new RoundedBoxGeometry(0.055, 0.018, 0.032, 2, 0.004),
     [fuzeSide, fuzeSide, labelMaterial(fuzeTex), fuzeSide, fuzeSide, fuzeSide]
   );
-  fuzeBtn.position.set(0.075, 0.009, 0.022);
+  fuzeBtn.position.set(0.075, 0.009, 0.012);
   fuzeBtn.castShadow = true;
   fuzeBtn.userData.onClick = () => send({ type: 'fuze' });
   fuzeBtn.userData.highlightTargets = [fuzeBtn];
@@ -111,7 +111,7 @@ export function build({ view, send }) {
       new RoundedBoxGeometry(0.026, 0.024, 0.032, 2, 0.004),
       [side, side, labelMaterial(tex), side, side, side]
     );
-    wheel.position.set(-0.098 + i * 0.033, 0.012, 0.112);
+    wheel.position.set(-0.098 + i * 0.033, 0.012, 0.088);
     wheel.castShadow = true;
     wheel.userData.onClick = () => send({ type: 'wheel', index: i });
     wheel.userData.highlightTargets = [wheel];
@@ -122,7 +122,7 @@ export function build({ view, send }) {
   codeLabelTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'CODE', { bg: '#2a2d35', color: '#cfd6e4', font: `bold 28px 'Consolas', monospace` }));
   const codeLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.015), labelMaterial(codeLabelTex));
   codeLabel.rotation.x = -Math.PI / 2;
-  codeLabel.position.set(-0.065, 0.0005, 0.092);
+  codeLabel.position.set(-0.065, 0.0005, 0.062);
   group.add(codeLabel);
 
   /* ---- PICKLE button (front-right, guarded ring) ---- */
@@ -131,12 +131,12 @@ export function build({ view, send }) {
     new THREE.MeshStandardMaterial({ color: 0xc9b458, metalness: 0.6, roughness: 0.45 })
   );
   guard.rotation.x = Math.PI / 2;
-  guard.position.set(0.085, 0.008, 0.115);
+  guard.position.set(0.085, 0.008, 0.088);
   group.add(guard);
 
   const pickleMat = new THREE.MeshStandardMaterial({ color: 0xb32430, roughness: 0.4, metalness: 0.2 });
   const pickle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.018, 20), pickleMat);
-  pickle.position.set(0.085, 0.012, 0.115);
+  pickle.position.set(0.085, 0.012, 0.088);
   pickle.castShadow = true;
   pickle.userData.onClick = () => send({ type: 'pickle' });
   pickle.userData.highlightTargets = [pickle];
