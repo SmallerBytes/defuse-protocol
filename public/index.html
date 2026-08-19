@@ -66,19 +66,33 @@
   <div id="settings-overlay" class="overlay hidden" role="dialog" aria-labelledby="settings-title">
     <div class="settings-card">
       <h2 id="settings-title">SETTINGS</h2>
-      <p class="settings-lead">Choose how much time each difficulty gets. Saved on this device.</p>
-      <label class="field">
-        <span>EASY TIMER</span>
-        <select id="select-time-easy"></select>
-      </label>
-      <label class="field">
-        <span>MEDIUM TIMER</span>
-        <select id="select-time-normal"></select>
-      </label>
-      <label class="field">
-        <span>HARD TIMER</span>
-        <select id="select-time-hard"></select>
-      </label>
+      <p class="settings-lead">Timers and strike limits for each difficulty. Saved on this device. The bomb detonates when you hit the strike limit.</p>
+      <div class="settings-grid">
+        <label class="field">
+          <span>EASY TIMER</span>
+          <select id="select-time-easy"></select>
+        </label>
+        <label class="field">
+          <span>EASY STRIKES</span>
+          <select id="select-strikes-easy"></select>
+        </label>
+        <label class="field">
+          <span>MEDIUM TIMER</span>
+          <select id="select-time-normal"></select>
+        </label>
+        <label class="field">
+          <span>MEDIUM STRIKES</span>
+          <select id="select-strikes-normal"></select>
+        </label>
+        <label class="field">
+          <span>HARD TIMER</span>
+          <select id="select-time-hard"></select>
+        </label>
+        <label class="field">
+          <span>HARD STRIKES</span>
+          <select id="select-strikes-hard"></select>
+        </label>
+      </div>
       <div class="home-actions">
         <button id="btn-settings-done" type="button" class="btn primary">DONE</button>
         <button id="btn-settings-reset" type="button" class="btn">RESTORE DEFAULTS</button>

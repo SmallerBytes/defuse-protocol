@@ -1424,14 +1424,18 @@ var require_game = __commonJS({
     }
     var Game = class {
       /**
-       * @param {object} opts { difficulty, seed, timeMs, events: { onTick, onStrike, onModuleUpdate, onModuleSolved, onGameOver } }
+       * @param {object} opts { difficulty, seed, timeMs, maxStrikes, events: { onTick, onStrike, onModuleUpdate, onModuleSolved, onGameOver } }
        */
-      constructor({ difficulty = "normal", seed, events, logger, timeMs } = {}) {
+      constructor({ difficulty = "normal", seed, events, logger, timeMs, maxStrikes } = {}) {
         this.difficulty = DIFFICULTY[difficulty] ? difficulty : "normal";
         this.config = { ...DIFFICULTY[this.difficulty] };
         const custom = Number(timeMs);
         if (Number.isFinite(custom) && custom >= 15 * 1e3 && custom <= 30 * 60 * 1e3) {
           this.config.timeMs = Math.round(custom);
+        }
+        const strikes = Math.round(Number(maxStrikes));
+        if (Number.isFinite(strikes) && strikes >= 1 && strikes <= 9) {
+          this.config.maxStrikes = strikes;
         }
         this.seed = seed && String(seed).trim() ? String(seed).trim().toUpperCase() : randomSeed();
         this.events = events;

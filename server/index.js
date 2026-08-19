@@ -59,10 +59,10 @@ io.on('connection', (socket) => {
 
   socket.on('room:leave', () => manager.leave(socket));
 
-  socket.on('game:start', ({ difficulty, seed, timeMs } = {}, ack) => {
+  socket.on('game:start', ({ difficulty, seed, timeMs, maxStrikes } = {}, ack) => {
     const room = manager.roomOf(socket);
     if (!room) return;
-    const result = room.startGame({ difficulty, seed, timeMs }, socket.id);
+    const result = room.startGame({ difficulty, seed, timeMs, maxStrikes }, socket.id);
     if (typeof ack === 'function') ack(result);
   });
 

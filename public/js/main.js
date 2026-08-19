@@ -16,6 +16,9 @@ const TIME_KEY = 'defuse-protocol.times';
 const STATS_KEY = 'defuse-protocol.stats';
 
 const DEFAULT_TIMES = { easy: 6 * 60 * 1000, normal: 5 * 60 * 1000, hard: 8 * 60 * 1000 };
+const DEFAULT_STRIKES = { easy: 3, normal: 3, hard: 2 };
+const STRIKE_KEY = 'defuse-protocol.strikes';
+const STRIKE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const TIME_VER_KEY = 'defuse-protocol.times.v';
 const OLD_HARD_MS = 3 * 60 * 1000;
 const TIME_OPTIONS_MS = [
@@ -25,9 +28,9 @@ const TIME_OPTIONS_MS = [
 ];
 
 const DIFF_COPY = {
-  easy: { title: 'EASY', rest: '3 modules · 3 strikes' },
-  normal: { title: 'MEDIUM', rest: '4 modules · 3 strikes · +1 hard' },
-  hard: { title: 'HARD', rest: '5 modules · 2 strikes · Weapons Release + 1 hard' }
+  easy: { title: 'EASY', rest: '3 modules' },
+  normal: { title: 'MEDIUM', rest: '4 modules · +1 hard' },
+  hard: { title: 'HARD', rest: '5 modules · Weapons Release + 1 hard' }
 };
 
 const state = {
@@ -87,6 +90,7 @@ function loadPrefs() {
 }
 loadPrefs();
 fillTimeSelects();
+fillStrikeSelects();
 refreshDifficultyLabels();
 
 $('select-quality').addEventListener('change', () => {
@@ -136,6 +140,52 @@ function saveTimes(times) {
   localStorage.setItem(TIME_KEY, JSON.stringify(times));
 }
 
+function clampStrikes(n) {
+  const v = Math.round(Number(n));
+  if (!Number.isFinite(v)) return null;
+  return Math.min(9, Math.max(1, v));
+}
+
+function loadStrikes() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STRIKE_KEY) || '{}');
+    return {
+      easy: clampStrikes(raw.easy) ?? DEFAULT_STRIKES.easy,
+      normal: clampStrikes(raw.normal) ?? DEFAULT_STRIKES.normal,
+      hard: clampStrikes(raw.hard) ?? DEFAULT_STRIKES.hard
+    };
+  } catch {
+    return { ...DEFAULT_STRIKES };
+  }
+}
+
+function saveStrikes(strikes) {
+  localStorage.setItem(STRIKE_KEY, JSON.stringify(strikes));
+}
+
+function fillStrikeSelects() {
+  const strikes = loadStrikes();
+  for (const key of ['easy', 'normal', 'hard']) {
+    const sel = $(`select-strikes-${key}`);
+    sel.innerHTML = STRIKE_OPTIONS.map((n) =>
+      `<option value="${n}">${n} ${n === 1 ? 'strike' : 'strikes'}</option>`
+    ).join('');
+    sel.value = String(strikes[key]);
+  }
+}
+
+function readStrikesFromSelects() {
+  return {
+    easy: Number($('select-strikes-easy').value),
+    normal: Number($('select-strikes-normal').value),
+    hard: Number($('select-strikes-hard').value)
+  };
+}
+
+function strikeLabel(n) {
+  return n === 1 ? '1 strike' : `${n} strikes`;
+}
+
 function fillTimeSelects() {
   const times = loadTimes();
   for (const key of ['easy', 'normal', 'hard']) {
@@ -157,20 +207,23 @@ function readTimesFromSelects() {
 
 function refreshDifficultyLabels() {
   const times = loadTimes();
+  const strikes = loadStrikes();
   for (const opt of $('select-difficulty').options) {
     const copy = DIFF_COPY[opt.value];
     if (!copy) continue;
-    opt.textContent = `${copy.title} — ${copy.rest} · ${fmtTime(times[opt.value])}`;
+    opt.textContent = `${copy.title} — ${copy.rest} · ${fmtTime(times[opt.value])} · ${strikeLabel(strikes[opt.value])}`;
   }
 }
 
 function openSettings() {
   fillTimeSelects();
+  fillStrikeSelects();
   $('settings-overlay').classList.remove('hidden');
 }
 
 function closeSettings() {
   saveTimes(readTimesFromSelects());
+  saveStrikes(readStrikesFromSelects());
   refreshDifficultyLabels();
   $('settings-overlay').classList.add('hidden');
 }
@@ -254,6 +307,7 @@ function startMission({ enterVr = false } = {}) {
     difficulty: getDifficulty(),
     seed: getSeed() || undefined,
     timeMs: loadTimes()[getDifficulty()],
+    maxStrikes: loadStrikes()[getDifficulty()],
     onTick: ({ remainingMs }) => {
       updateTimer(remainingMs);
       if (state.scene3d) state.scene3d.setTimer(remainingMs);
@@ -319,7 +373,9 @@ $('btn-settings')?.addEventListener('click', openSettings);
 $('btn-settings-done')?.addEventListener('click', closeSettings);
 $('btn-settings-reset')?.addEventListener('click', () => {
   saveTimes({ ...DEFAULT_TIMES });
+  saveStrikes({ ...DEFAULT_STRIKES });
   fillTimeSelects();
+  fillStrikeSelects();
   refreshDifficultyLabels();
 });
 $('settings-overlay')?.addEventListener('click', (e) => {

@@ -252,6 +252,14 @@ check('custom timeMs override is used', () => {
     assert.strictEqual(g.remainingMs, 90 * 1000);
   } finally { g.destroy(); }
 });
+check('custom maxStrikes override is used', () => {
+  const noop = { onTick() {}, onStrike() {}, onModuleUpdate() {}, onModuleSolved() {}, onGameOver() {} };
+  const logger = { log() {} };
+  const g = new Game({ difficulty: 'hard', seed: 'STRIKE-1', events: noop, logger, maxStrikes: 5 });
+  try {
+    assert.strictEqual(g.config.maxStrikes, 5);
+  } finally { g.destroy(); }
+});
 
 console.log('seeded determinism');
 check('same seed -> identical game', () => {

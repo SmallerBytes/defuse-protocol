@@ -16,6 +16,7 @@ export function startSoloGame({
   difficulty = 'normal',
   seed,
   timeMs,
+  maxStrikes,
   onTick,
   onStrike,
   onModuleUpdate,
@@ -26,6 +27,7 @@ export function startSoloGame({
     difficulty,
     seed,
     timeMs,
+    maxStrikes,
     logger: noopLog,
     events: {
       onTick: onTick || (() => {}),
