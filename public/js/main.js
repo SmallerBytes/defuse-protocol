@@ -300,7 +300,8 @@ function ensureScene() {
       if (state.session?.game) state.session.game._fly(landed && !squashed);
       if (squashed) sound.squish();
     };
-    state.scene3d.onFlyBuzz = () => sound.buzz();
+    state.scene3d.onFlyAudio = (args) => sound.flyAudio(args);
+    state.scene3d.onFanChange = (on) => sound.fanHum(on);
   } else {
     state.scene3d.setQuality(getQuality());
   }

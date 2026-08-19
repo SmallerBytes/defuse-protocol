@@ -39,6 +39,62 @@ function noise({ dur = 0.4, gain = 0.2, when = 0 }) {
   src.start(t0);
 }
 
+let spatial = null;
+
+function ensureSpatial() {
+  if (spatial) return spatial;
+  const a = ac();
+  const buzzOsc = a.createOscillator();
+  buzzOsc.type = 'sawtooth';
+  buzzOsc.frequency.value = 195;
+  const buzzOsc2 = a.createOscillator();
+  buzzOsc2.type = 'square';
+  buzzOsc2.frequency.value = 310;
+  const buzzFilter = a.createBiquadFilter();
+  buzzFilter.type = 'bandpass';
+  buzzFilter.frequency.value = 420;
+  buzzFilter.Q.value = 3.2;
+  const buzzPanner = a.createPanner();
+  buzzPanner.panningModel = 'HRTF';
+  buzzPanner.distanceModel = 'exponential';
+  buzzPanner.refDistance = 0.14;
+  buzzPanner.rolloffFactor = 5;
+  buzzPanner.maxDistance = 4;
+  const buzzGain = a.createGain();
+  buzzGain.gain.value = 0;
+  buzzOsc.connect(buzzFilter);
+  buzzOsc2.connect(buzzFilter);
+  buzzFilter.connect(buzzPanner).connect(buzzGain).connect(a.destination);
+  buzzOsc.start();
+  buzzOsc2.start();
+
+  const fanOsc = a.createOscillator();
+  fanOsc.type = 'sawtooth';
+  fanOsc.frequency.value = 78;
+  const fanNoiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate);
+  const nd = fanNoiseBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  const fanNoise = a.createBufferSource();
+  fanNoise.buffer = fanNoiseBuf;
+  fanNoise.loop = true;
+  const fanFilter = a.createBiquadFilter();
+  fanFilter.type = 'lowpass';
+  fanFilter.frequency.value = 420;
+  const fanGain = a.createGain();
+  fanGain.gain.value = 0;
+  fanOsc.connect(fanFilter);
+  fanNoise.connect(fanFilter);
+  fanFilter.connect(fanGain).connect(a.destination);
+  fanOsc.start();
+  fanNoise.start();
+
+  spatial = {
+    buzzGain, buzzPanner, fanGain, listener: a.listener, ctx: a,
+    buzzOn: false, fanOn: false
+  };
+  return spatial;
+}
+
 export const sound = {
   unlock() { ac(); },
   click() { tone({ freq: 900, dur: 0.04, gain: 0.05 }); },
@@ -52,7 +108,45 @@ export const sound = {
     tone({ freq: 180, dur: 0.3, type: 'sawtooth', gain: 0.15, slide: -80 });
     noise({ dur: 0.2, gain: 0.1 });
   },
-  buzz() { tone({ freq: 190, dur: 0.2, type: 'sawtooth', gain: 0.03 }); },
+  flyAudio({ flyPos, earPos, look, up, alive }) {
+    if (!alive && !spatial) return;
+    const s = ensureSpatial();
+    const now = s.ctx.currentTime;
+    s.buzzOn = !!alive;
+    s.buzzGain.gain.setTargetAtTime(alive ? 0.09 : 0, now, 0.08);
+    if (!alive || !flyPos || !earPos) return;
+    if (s.listener.positionX) {
+      s.listener.positionX.value = earPos.x;
+      s.listener.positionY.value = earPos.y;
+      s.listener.positionZ.value = earPos.z;
+      if (look && up && s.listener.forwardX) {
+        s.listener.forwardX.value = look.x;
+        s.listener.forwardY.value = look.y;
+        s.listener.forwardZ.value = look.z;
+        s.listener.upX.value = up.x;
+        s.listener.upY.value = up.y;
+        s.listener.upZ.value = up.z;
+      }
+    } else if (s.listener.setPosition) {
+      s.listener.setPosition(earPos.x, earPos.y, earPos.z);
+      if (look && up && s.listener.setOrientation) {
+        s.listener.setOrientation(look.x, look.y, look.z, up.x, up.y, up.z);
+      }
+    }
+    if (s.buzzPanner.positionX) {
+      s.buzzPanner.positionX.value = flyPos.x;
+      s.buzzPanner.positionY.value = flyPos.y;
+      s.buzzPanner.positionZ.value = flyPos.z;
+    } else if (s.buzzPanner.setPosition) {
+      s.buzzPanner.setPosition(flyPos.x, flyPos.y, flyPos.z);
+    }
+  },
+  fanHum(on) {
+    if (!on && !spatial) return;
+    const s = ensureSpatial();
+    s.fanOn = !!on;
+    s.fanGain.gain.setTargetAtTime(on ? 0.045 : 0, s.ctx.currentTime, 0.12);
+  },
   squish() {
     noise({ dur: 0.06, gain: 0.18 });
     tone({ freq: 140, dur: 0.09, type: 'sawtooth', gain: 0.09 });

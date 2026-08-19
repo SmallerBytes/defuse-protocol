@@ -14,6 +14,7 @@ import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Device } from './device.js';
 import { createFly } from './fly.js';
+import { createDeskFan } from './fan.js';
 import { attachXR } from './xr.js';
 
 export function createDeviceScene(container, initialQuality = 'medium') {
@@ -211,10 +212,22 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   let device = null;
   let downAt = null;
   let hovered = null;
-  const fly = createFly(() => api.swatFly());
-  fly.group.visible = false;
+  const fly = createFly();
   scene.add(fly.group);
-  let buzzT = 0;
+  const fan = createDeskFan((on) => api.onFanChange?.(on));
+  fan.setVisible(false);
+  scene.add(fan.group);
+  const headPos = new THREE.Vector3();
+  const fanPos = new THREE.Vector3();
+  const lookDir = new THREE.Vector3();
+  const upDir = new THREE.Vector3();
+  let lastLanded = false;
+
+  function interactTargets() {
+    const t = device ? [...device.targets] : [];
+    if (fan.group.visible) t.push(fan.hit);
+    return t;
+  }
 
   function castAt(e) {
     if (!device || renderer.xr.isPresenting) return null;
@@ -222,8 +235,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
-    const targets = fly.group.visible ? [...device.targets, fly.hit] : device.targets;
-    const hits = raycaster.intersectObjects(targets, false);
+    const hits = raycaster.intersectObjects(interactTargets(), false);
     return hits.find((h) => h.object.userData.onClick) || null;
   }
 
@@ -265,10 +277,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     scene,
     camera,
     dolly,
-    getTargets: () => {
-      const t = device ? device.targets : [];
-      return fly.group.visible ? [...t, fly.hit] : t;
-    },
+    getTargets: () => interactTargets(),
     onSelect: (obj) => {
       if (obj.userData.onClick) obj.userData.onClick();
     },
@@ -318,17 +327,31 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     if (!presenting) controls.update();
     xr.tick(dt);
     if (device) device.tick(dt, t);
-    const landed = fly.tick(dt, t, !!(device && device.over));
-    if (landed) {
-      api.onFlyChange?.({ landed: true });
-      buzzT += dt;
-      if (buzzT >= 1.8) {
-        buzzT = 0;
-        api.onFlyBuzz?.();
-      }
-    } else {
-      buzzT = 0;
+    fan.tick(dt);
+    camera.getWorldPosition(headPos);
+    camera.getWorldDirection(lookDir);
+    upDir.setFromMatrixColumn(camera.matrixWorld, 1);
+    fan.intakeWorld(fanPos);
+    const flyState = fly.tick(dt, t, {
+      gameOver: !!(device && device.over),
+      head: headPos,
+      fanOn: fan.on,
+      fanPos
+    });
+    if (flyState.squashed) {
+      lastLanded = false;
+      api.onFlyChange?.({ landed: false, squashed: true });
+    } else if (flyState.landed !== lastLanded) {
+      lastLanded = !!flyState.landed;
+      api.onFlyChange?.({ landed: flyState.landed });
     }
+    api.onFlyAudio?.({
+      flyPos: fly.group.position,
+      earPos: headPos,
+      look: lookDir,
+      up: upDir,
+      alive: flyState.alive
+    });
 
     if (!presenting && shake > 0.001) {
       controls.target.set(
@@ -364,23 +387,21 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   const api = {
     onXRChange: null,
     onFlyChange: null,
-    onFlyBuzz: null,
-    startGame(payload, send, { fly: enableFly = true } = {}) {
+    onFlyAudio: null,
+    onFanChange: null,
+    startGame(payload, send, { fly: enableFly = false } = {}) {
       if (device) scene.remove(device.group);
       device = new Device(payload, send);
       scene.add(device.group);
+      lastLanded = false;
+      fan.setVisible(enableFly);
       if (enableFly) fly.spawn();
       else {
-        fly.group.visible = false;
+        fly.hide();
         api.onFlyChange?.({ landed: false });
+        api.onFlyAudio?.({ alive: false });
+        api.onFanChange?.(false);
       }
-    },
-    swatFly() {
-      if (fly.squash()) {
-        api.onFlyChange?.({ landed: false, squashed: true });
-        return true;
-      }
-      return false;
     },
     updateModule(id, view) { if (device) device.updateModule(id, view); },
     markSolved(id) {
@@ -403,8 +424,10 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     gameOver(won) {
       if (!device) return;
       device.gameOver(won);
-      fly.group.visible = false;
-      fly.tick(0, 0, true);
+      fly.hide();
+      fan.setVisible(false);
+      api.onFlyAudio?.({ alive: false });
+      api.onFanChange?.(false);
       fxLight.color.setHex(won ? 0x39d98a : 0xff2233);
       fxPulse = won ? 10 : 40;
       if (!won && !renderer.xr.isPresenting) shake = 2.5;
