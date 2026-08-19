@@ -33,7 +33,7 @@ export function createFly() {
   }
   group.add(body, headMesh);
 
-  /* 0 hidden, 1 circling head, 2 landed, 3 dead, 4 sucked into fan, 5 waiting to respawn */
+  /* 0 hidden, 1 circling head, 2 landed, 3 dead, 4 sucked into fan, 5 waiting to respawn, 6 diving to bomb */
   let mode = 0;
   let enabled = false;
   let waitT = 0;
@@ -83,14 +83,11 @@ export function createFly() {
     return true;
   }
 
-  function land() {
-    mode = 2;
-    landT = 0;
+  function startDive() {
     const spot = LAND_SPOTS[Math.floor(Math.random() * LAND_SPOTS.length)];
     landSpot = new THREE.Vector3(...spot);
-    group.position.copy(landSpot);
-    group.rotation.set(0, Math.random() * Math.PI * 2, 0);
-    return true;
+    mode = 6;
+    waitT = 0;
   }
 
   function flap(t, amt) {
@@ -123,7 +120,7 @@ export function createFly() {
       return { landed: false, alive: false };
     }
 
-    if (fanOn && fanPos && (mode === 1 || mode === 2)) {
+    if (fanOn && fanPos && (mode === 1 || mode === 2 || mode === 6)) {
       mode = 4;
       landSpot = null;
     }
@@ -149,34 +146,49 @@ export function createFly() {
     if (mode === 2) {
       landT += dt;
       flap(t, 0.22);
+      group.position.copy(landSpot);
       group.position.y = landSpot.y + Math.sin(t * 28) * 0.0012;
       pos.copy(group.position);
-      if (landT > 5.5) {
-        mode = 1;
-        landSpot = null;
-        waitT = 0;
-      }
       return { landed: true, alive: true };
     }
 
-    // Circle the player's head, slow and lazy, with a little darting.
+    if (mode === 6 && landSpot) {
+      prev.copy(pos);
+      pos.copy(group.position);
+      tmp.copy(landSpot).sub(pos);
+      const dist = tmp.length();
+      if (dist < 0.03) {
+        mode = 2;
+        landT = 0;
+        group.position.copy(landSpot);
+        group.rotation.set(0, Math.random() * Math.PI * 2, 0);
+        return { landed: true, alive: true };
+      }
+      tmp.multiplyScalar(Math.min(1, (1.8 * dt) / Math.max(dist, 0.001)));
+      pos.add(tmp);
+      group.position.copy(pos);
+      if (pos.distanceToSquared(prev) > 1e-10) group.lookAt(landSpot);
+      flap(t, 0.85);
+      return { landed: false, alive: true };
+    }
+
+    // Circle the player's head, fast and darting, then dive onto the bomb.
     if (!head) return { landed: false, alive: true };
-    a += dt * (0.7 + Math.sin(t * 1.4) * 0.18);
-    const r = 0.22 + Math.sin(t * 0.9) * 0.05;
+    a += dt * (2.6 + Math.sin(t * 3.8) * 0.7);
+    const r = 0.2 + Math.sin(t * 2.4) * 0.06;
     prev.copy(pos);
     pos.set(
-      head.x + Math.cos(a) * r + Math.sin(t * 2.1) * 0.03,
-      head.y + Math.sin(t * 1.7) * 0.04,
-      head.z + Math.sin(a) * r + Math.cos(t * 1.5) * 0.03
+      head.x + Math.cos(a) * r + Math.sin(t * 5.1) * 0.05,
+      head.y + Math.sin(t * 4.2) * 0.05,
+      head.z + Math.sin(a) * r + Math.cos(t * 3.6) * 0.05
     );
     group.position.copy(pos);
     if (pos.distanceToSquared(prev) > 1e-10) group.lookAt(prev.x, prev.y, prev.z);
-    flap(t, 0.7);
+    flap(t, 0.85);
 
     waitT += dt;
-    if (waitT > 7 && Math.random() < dt * 0.12) {
-      waitT = 0;
-      return { landed: land(), alive: true };
+    if (waitT > 5 || (waitT > 3 && Math.random() < dt * 0.35)) {
+      startDive();
     }
     return { landed: false, alive: true };
   }
