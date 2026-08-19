@@ -41,32 +41,83 @@ function noise({ dur = 0.4, gain = 0.2, when = 0 }) {
 
 let spatial = null;
 
+function noiseLoop(a, seconds = 2.4) {
+  const buf = a.createBuffer(1, Math.floor(a.sampleRate * seconds), a.sampleRate);
+  const d = buf.getChannelData(0);
+  let brown = 0;
+  for (let i = 0; i < d.length; i++) {
+    brown = brown * 0.92 + (Math.random() * 2 - 1) * 0.08;
+    d[i] = brown * 0.65 + (Math.random() * 2 - 1) * 0.35;
+  }
+  const src = a.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.start();
+  return src;
+}
+
 function ensureSpatial() {
   if (spatial) return spatial;
   const a = ac();
-  const buzzOsc = a.createOscillator();
-  buzzOsc.type = 'sawtooth';
-  buzzOsc.frequency.value = 195;
-  const buzzOsc2 = a.createOscillator();
-  buzzOsc2.type = 'square';
-  buzzOsc2.frequency.value = 310;
-  const buzzFilter = a.createBiquadFilter();
-  buzzFilter.type = 'bandpass';
-  buzzFilter.frequency.value = 420;
-  buzzFilter.Q.value = 3.2;
+
+  /* Housefly: turbulent wing noise, chopped at ~200 Hz wingbeat. */
+  const wings = noiseLoop(a);
+  const air = noiseLoop(a, 1.7);
+
+  const wingBp = a.createBiquadFilter();
+  wingBp.type = 'bandpass';
+  wingBp.frequency.value = 1400;
+  wingBp.Q.value = 1.1;
+
+  const bodyBp = a.createBiquadFilter();
+  bodyBp.type = 'bandpass';
+  bodyBp.frequency.value = 720;
+  bodyBp.Q.value = 2.4;
+
+  const hissBp = a.createBiquadFilter();
+  hissBp.type = 'bandpass';
+  hissBp.frequency.value = 3400;
+  hissBp.Q.value = 1.6;
+
+  const am = a.createGain();
+  am.gain.value = 0;
+  const hissGain = a.createGain();
+  hissGain.gain.value = 0.22;
+  const bodyGain = a.createGain();
+  bodyGain.gain.value = 0.55;
+
+  const wingLfo = a.createOscillator();
+  wingLfo.type = 'sine';
+  wingLfo.frequency.value = 210;
+  const wingDepth = a.createGain();
+  wingDepth.gain.value = 0.48;
+  const wingBias = a.createConstantSource();
+  wingBias.offset.value = 0.5;
+  wingLfo.connect(wingDepth).connect(am.gain);
+  wingBias.connect(am.gain);
+  wingLfo.start();
+  wingBias.start();
+
+  wings.connect(wingBp).connect(am);
+  air.connect(bodyBp).connect(bodyGain).connect(am);
+  air.connect(hissBp).connect(hissGain).connect(am);
+
+  const color = a.createBiquadFilter();
+  color.type = 'peaking';
+  color.frequency.value = 1800;
+  color.Q.value = 0.7;
+  color.gain.value = 4;
+
   const buzzPanner = a.createPanner();
   buzzPanner.panningModel = 'HRTF';
   buzzPanner.distanceModel = 'exponential';
-  buzzPanner.refDistance = 0.14;
-  buzzPanner.rolloffFactor = 5;
-  buzzPanner.maxDistance = 4;
+  buzzPanner.refDistance = 0.09;
+  buzzPanner.rolloffFactor = 6;
+  buzzPanner.maxDistance = 5;
+
   const buzzGain = a.createGain();
   buzzGain.gain.value = 0;
-  buzzOsc.connect(buzzFilter);
-  buzzOsc2.connect(buzzFilter);
-  buzzFilter.connect(buzzPanner).connect(buzzGain).connect(a.destination);
-  buzzOsc.start();
-  buzzOsc2.start();
+  am.connect(color).connect(buzzPanner).connect(buzzGain).connect(a.destination);
 
   const fanOsc = a.createOscillator();
   fanOsc.type = 'sawtooth';
@@ -89,8 +140,9 @@ function ensureSpatial() {
   fanNoise.start();
 
   spatial = {
-    buzzGain, buzzPanner, fanGain, listener: a.listener, ctx: a,
-    buzzOn: false, fanOn: false
+    buzzGain, buzzPanner, wingLfo, fanGain, listener: a.listener, ctx: a,
+    buzzOn: false, fanOn: false,
+    lastFly: null
   };
   return spatial;
 }
@@ -108,13 +160,32 @@ export const sound = {
     tone({ freq: 180, dur: 0.3, type: 'sawtooth', gain: 0.15, slide: -80 });
     noise({ dur: 0.2, gain: 0.1 });
   },
-  flyAudio({ flyPos, earPos, look, up, alive }) {
+  flyAudio({ flyPos, earPos, look, up, alive, landed }) {
     if (!alive && !spatial) return;
     const s = ensureSpatial();
     const now = s.ctx.currentTime;
     s.buzzOn = !!alive;
-    s.buzzGain.gain.setTargetAtTime(alive ? 0.09 : 0, now, 0.08);
-    if (!alive || !flyPos || !earPos) return;
+    const vol = !alive ? 0 : landed ? 0.018 : 0.16;
+    s.buzzGain.gain.setTargetAtTime(vol, now, alive ? 0.04 : 0.08);
+    if (!alive || !flyPos || !earPos) {
+      s.lastFly = null;
+      if (s.wingLfo) s.wingLfo.frequency.setTargetAtTime(90, now, 0.12);
+      return;
+    }
+
+    let speed = 0.2;
+    if (s.lastFly) {
+      const dx = flyPos.x - s.lastFly.x;
+      const dy = flyPos.y - s.lastFly.y;
+      const dz = flyPos.z - s.lastFly.z;
+      speed = Math.min(2.2, Math.hypot(dx, dy, dz) / 0.016);
+    }
+    s.lastFly = { x: flyPos.x, y: flyPos.y, z: flyPos.z };
+
+    const wingHz = landed
+      ? 72 + Math.sin(now * 9) * 8
+      : 188 + speed * 28 + Math.sin(now * 13.7) * 14 + Math.sin(now * 3.1) * 9;
+    s.wingLfo.frequency.setTargetAtTime(wingHz, now, 0.045);
     if (s.listener.positionX) {
       s.listener.positionX.value = earPos.x;
       s.listener.positionY.value = earPos.y;

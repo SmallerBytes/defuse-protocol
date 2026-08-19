@@ -350,7 +350,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       earPos: headPos,
       look: lookDir,
       up: upDir,
-      alive: flyState.alive
+      alive: flyState.alive,
+      landed: flyState.landed
     });
 
     if (!presenting && shake > 0.001) {
