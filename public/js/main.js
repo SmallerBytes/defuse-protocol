@@ -25,7 +25,7 @@ const TIME_OPTIONS_MS = [
 const DIFF_COPY = {
   easy: { title: 'EASY', rest: '3 modules · 3 strikes' },
   normal: { title: 'MEDIUM', rest: '4 modules · 3 strikes · +1 hard' },
-  hard: { title: 'HARD', rest: '5 modules · 2 strikes · +2 hard' }
+  hard: { title: 'HARD', rest: '5 modules · 2 strikes · Weapons Release + 1 hard' }
 };
 
 const state = {

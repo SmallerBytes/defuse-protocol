@@ -1409,9 +1409,12 @@ var require_game = __commonJS({
     var HARD_MODULES = ["ordnance", "comms", "threatplot", "brevity"];
     function pickTypes(rng, difficulty) {
       const classic = rng.shuffle(CLASSIC_MODULES.slice());
-      const hard = rng.shuffle(HARD_MODULES.slice());
+      const hardPool = rng.shuffle(HARD_MODULES.filter((t) => t !== "ordnance"));
       if (difficulty === "easy") return rng.shuffle(classic.slice(0, 3));
-      if (difficulty === "hard") return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 2)]);
+      if (difficulty === "hard") {
+        return rng.shuffle([...classic.slice(0, 3), "ordnance", hardPool[0]]);
+      }
+      const hard = rng.shuffle(HARD_MODULES.slice());
       return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 1)]);
     }
     function makeSerial(rng) {

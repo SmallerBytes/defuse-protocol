@@ -17,10 +17,14 @@ const HARD_MODULES = ['ordnance', 'comms', 'threatplot', 'brevity'];
 
 function pickTypes(rng, difficulty) {
   const classic = rng.shuffle(CLASSIC_MODULES.slice());
-  const hard = rng.shuffle(HARD_MODULES.slice());
+  const hardPool = rng.shuffle(HARD_MODULES.filter((t) => t !== 'ordnance'));
   if (difficulty === 'easy') return rng.shuffle(classic.slice(0, 3));
-  if (difficulty === 'hard') return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 2)]);
-  // medium / normal: three classic + one hard
+  if (difficulty === 'hard') {
+    // Always Weapons Release, plus one other hard module.
+    return rng.shuffle([...classic.slice(0, 3), 'ordnance', hardPool[0]]);
+  }
+  // medium / normal: three classic + one hard (Weapons Release is eligible)
+  const hard = rng.shuffle(HARD_MODULES.slice());
   return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 1)]);
 }
 

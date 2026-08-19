@@ -226,7 +226,7 @@ check('medium is 3 classic + 1 hard', () => {
     } finally { g.destroy(); }
   }
 });
-check('hard is 3 classic + 2 hard', () => {
+check('hard is 3 classic + weapons release + 1 other hard', () => {
   const noop = { onTick() {}, onStrike() {}, onModuleUpdate() {}, onModuleSolved() {}, onGameOver() {} };
   const logger = { log() {} };
   for (const seed of SEEDS) {
@@ -238,6 +238,7 @@ check('hard is 3 classic + 2 hard', () => {
       const classic = types.filter((t) => CLASSIC_MODULES.includes(t));
       assert.strictEqual(hard.length, 2);
       assert.strictEqual(classic.length, 3);
+      assert.ok(types.includes('ordnance'), 'hard always includes weapons release');
     } finally { g.destroy(); }
   }
 });
