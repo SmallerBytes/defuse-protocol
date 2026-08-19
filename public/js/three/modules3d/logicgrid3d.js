@@ -58,7 +58,7 @@ export function build({ view, send }) {
     const tex = new CanvasTex(512, 96);
     const sideMat = new THREE.MeshStandardMaterial({ color: 0x32384a, roughness: 0.55, metalness: 0.2 });
     const bar = new THREE.Mesh(barGeo, [sideMat, sideMat, labelMaterial(tex), sideMat, sideMat, sideMat]);
-    bar.position.set(0, 0.011, 0.04 + i * 0.048);
+    bar.position.set(0, 0.011, 0.006 + i * 0.046);
     bar.castShadow = true;
     bar.userData.highlightTargets = [bar];
     group.add(bar);
