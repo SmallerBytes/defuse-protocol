@@ -78,7 +78,16 @@ export function build({ view, send }) {
   knob.add(notch);
   knob.position.set(-0.015, 0.011, 0.022);
   knob.castShadow = true;
-  knob.userData.onClick = () => send({ type: 'station' });
+  const STATIONS = ['GBU-12', 'GBU-31', 'GBU-38', 'AGM-65'];
+  const QUARTER = Math.PI / 2;
+  let knobTarget = 0;
+  let knobAngle = 0;
+  let lastStation = Math.max(0, STATIONS.indexOf(view.weapon));
+  knob.userData.onClick = () => {
+    knobTarget += QUARTER;
+    lastStation = (lastStation + 1) % STATIONS.length;
+    send({ type: 'station' });
+  };
   knob.userData.highlightTargets = [knob];
   group.add(knob);
 
@@ -174,6 +183,12 @@ export function build({ view, send }) {
     leverTipMat.color.setHex(v.masterArm ? 0xff3333 : 0xb33030);
 
     stationTex.draw((ctx, w, h) => drawReadout(ctx, w, h, v.weapon, { color: '#ffd23f' }));
+    const idx = Math.max(0, STATIONS.indexOf(v.weapon));
+    if (idx !== lastStation) {
+      const steps = (idx - lastStation + STATIONS.length) % STATIONS.length;
+      if (steps) knobTarget += steps * QUARTER;
+      lastStation = idx;
+    }
     fuzeTex.draw((ctx, w, h) => drawLabel(ctx, w, h, v.fuze, {
       bg: v.fuze === 'TAIL' ? '#3a3020' : '#cfd6e4',
       color: v.fuze === 'TAIL' ? '#ffd23f' : '#181818',
@@ -184,6 +199,13 @@ export function build({ view, send }) {
     });
   }
 
+  function tick(dt) {
+    if (knobAngle < knobTarget) {
+      knobAngle = Math.min(knobTarget, knobAngle + dt * 10);
+      knob.rotation.y = knobAngle;
+    }
+  }
+
   update(view);
-  return { group, update };
+  return { group, update, tick };
 }
