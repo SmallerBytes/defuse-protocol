@@ -48,7 +48,20 @@ body {
 .logo span { color: var(--accent); display: block; font-size: 1.2rem; letter-spacing: 0.6em; }
 .tagline { color: var(--muted); text-align: center; margin: 12px 0 24px; font-size: 0.85rem; }
 
-.field { display: block; margin-bottom: 16px; }
+.field-hint { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.04em; margin-top: 6px; line-height: 1.35; }
+.field-hint.alert { color: var(--danger); }
+.seed-row { display: flex; gap: 8px; align-items: stretch; }
+.seed-row input {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  min-width: 0;
+}
+.seed-row .btn {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  letter-spacing: 0.12em;
+}
 .field span { display: block; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.15em; margin-bottom: 6px; }
 .field input, .field select, .join-row input {
   width: 100%;

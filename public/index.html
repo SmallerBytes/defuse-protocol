@@ -28,7 +28,11 @@
 
       <label class="field">
         <span>SEED (optional, for replays)</span>
-        <input id="input-seed" placeholder="random each run" autocomplete="off" />
+        <div class="seed-row">
+          <input id="input-seed" placeholder="random each run" autocomplete="off" />
+          <button id="btn-seed-reset" type="button" class="btn" title="Clear seed for a new bomb">RESET</button>
+        </div>
+        <p id="seed-hint" class="field-hint">Leave blank for a random bomb. After a detonation, the last seed is filled in so you can retry.</p>
       </label>
 
       <label class="field">

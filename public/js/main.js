@@ -50,6 +50,28 @@ function getSeed() {
   return String($('input-seed').value || '').trim();
 }
 
+function setSeedField(seed, { fromDetonation = false } = {}) {
+  $('input-seed').value = seed || '';
+  const hint = $('seed-hint');
+  if (!hint) return;
+  if (fromDetonation && seed) {
+    hint.textContent = 'Detonation. Last seed loaded — hit RESET for a completely new bomb.';
+    hint.classList.add('alert');
+  } else {
+    hint.textContent = 'Leave blank for a random bomb. After a detonation, the last seed is filled in so you can retry.';
+    hint.classList.remove('alert');
+  }
+}
+
+function returnToMenu() {
+  if (state.session) {
+    state.session.destroy();
+    state.session = null;
+  }
+  if (state.scene3d?.isXRPresenting()) state.scene3d.exitVR();
+  show('home');
+}
+
 function persistPrefs() {
   localStorage.setItem(QUALITY_KEY, $('select-quality').value);
   localStorage.setItem(DIFF_KEY, $('select-difficulty').value);
@@ -337,11 +359,15 @@ function handleGameOver(summary) {
     state.scene3d.gameOver(won);
   }
 
-  $('end-title').textContent = won ? 'DEVICE DEFUSED' : 'DETONATION';
-  $('end-title').className = won ? 'win' : 'loss';
-  $('end-reason').textContent = won
-    ? `All modules neutralized with ${fmtTime(summary.timeRemainingMs)} to spare.`
-    : summary.reason === 'timer' ? 'The timer reached zero.' : 'Too many strikes.';
+  if (!won) {
+    setSeedField(summary.seed, { fromDetonation: true });
+    setTimeout(() => returnToMenu(), 1400);
+    return;
+  }
+
+  $('end-title').textContent = 'DEVICE DEFUSED';
+  $('end-title').className = 'win';
+  $('end-reason').textContent = `All modules neutralized with ${fmtTime(summary.timeRemainingMs)} to spare.`;
 
   $('end-summary').innerHTML = [
     [summary.modulesSolved + '/' + summary.modulesTotal, 'MODULES'],
@@ -351,14 +377,9 @@ function handleGameOver(summary) {
     [summary.seed, 'SEED']
   ].map(([v, l]) => `<div class="stat-cell"><b>${v}</b><span>${l}</span></div>`).join('');
 
-  setTimeout(() => show('end'), won ? 900 : 1800);
+  setTimeout(() => show('end'), 900);
 }
 
-$('btn-back-home')?.addEventListener('click', () => {
-  if (state.session) {
-    state.session.destroy();
-    state.session = null;
-  }
-  if (state.scene3d?.isXRPresenting()) state.scene3d.exitVR();
-  show('home');
-});
+$('btn-seed-reset')?.addEventListener('click', () => setSeedField(''));
+
+$('btn-back-home')?.addEventListener('click', () => returnToMenu());
