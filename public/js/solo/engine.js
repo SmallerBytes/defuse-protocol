@@ -15,6 +15,7 @@ const noopLog = { log() {} };
 export function startSoloGame({
   difficulty = 'normal',
   seed,
+  timeMs,
   onTick,
   onStrike,
   onModuleUpdate,
@@ -24,6 +25,7 @@ export function startSoloGame({
   const game = new Game({
     difficulty,
     seed,
+    timeMs,
     logger: noopLog,
     events: {
       onTick: onTick || (() => {}),

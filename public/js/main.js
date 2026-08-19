@@ -12,7 +12,21 @@ const screens = ['home', 'game', 'end'];
 
 const QUALITY_KEY = 'defuse-protocol.quality';
 const DIFF_KEY = 'defuse-protocol.difficulty';
+const TIME_KEY = 'defuse-protocol.times';
 const STATS_KEY = 'defuse-protocol.stats';
+
+const DEFAULT_TIMES = { easy: 6 * 60 * 1000, normal: 5 * 60 * 1000, hard: 3 * 60 * 1000 };
+const TIME_OPTIONS_MS = [
+  60 * 1000, 90 * 1000, 2 * 60 * 1000, 150 * 1000, 3 * 60 * 1000,
+  4 * 60 * 1000, 5 * 60 * 1000, 6 * 60 * 1000, 7 * 60 * 1000,
+  8 * 60 * 1000, 9 * 60 * 1000, 10 * 60 * 1000, 12 * 60 * 1000, 15 * 60 * 1000
+];
+
+const DIFF_COPY = {
+  easy: { title: 'EASY', rest: '3 modules · 3 strikes' },
+  normal: { title: 'MEDIUM', rest: '4 modules · 3 strikes · +1 hard' },
+  hard: { title: 'HARD', rest: '5 modules · 2 strikes · +2 hard' }
+};
 
 const state = {
   game: null,
@@ -48,6 +62,8 @@ function loadPrefs() {
   if (d) $('select-difficulty').value = d;
 }
 loadPrefs();
+fillTimeSelects();
+refreshDifficultyLabels();
 
 $('select-quality').addEventListener('change', () => {
   persistPrefs();
@@ -62,6 +78,71 @@ function show(name) {
 function fmtTime(ms) {
   const total = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function clampTime(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n)) return null;
+  const nearest = TIME_OPTIONS_MS.reduce((best, opt) =>
+    Math.abs(opt - n) < Math.abs(best - n) ? opt : best
+  );
+  return nearest;
+}
+
+function loadTimes() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TIME_KEY) || '{}');
+    return {
+      easy: clampTime(raw.easy) ?? DEFAULT_TIMES.easy,
+      normal: clampTime(raw.normal) ?? DEFAULT_TIMES.normal,
+      hard: clampTime(raw.hard) ?? DEFAULT_TIMES.hard
+    };
+  } catch {
+    return { ...DEFAULT_TIMES };
+  }
+}
+
+function saveTimes(times) {
+  localStorage.setItem(TIME_KEY, JSON.stringify(times));
+}
+
+function fillTimeSelects() {
+  const times = loadTimes();
+  for (const key of ['easy', 'normal', 'hard']) {
+    const sel = $(`select-time-${key}`);
+    sel.innerHTML = TIME_OPTIONS_MS.map((ms) =>
+      `<option value="${ms}">${fmtTime(ms)}</option>`
+    ).join('');
+    sel.value = String(times[key]);
+  }
+}
+
+function readTimesFromSelects() {
+  return {
+    easy: Number($('select-time-easy').value),
+    normal: Number($('select-time-normal').value),
+    hard: Number($('select-time-hard').value)
+  };
+}
+
+function refreshDifficultyLabels() {
+  const times = loadTimes();
+  for (const opt of $('select-difficulty').options) {
+    const copy = DIFF_COPY[opt.value];
+    if (!copy) continue;
+    opt.textContent = `${copy.title} — ${copy.rest} · ${fmtTime(times[opt.value])}`;
+  }
+}
+
+function openSettings() {
+  fillTimeSelects();
+  $('settings-overlay').classList.remove('hidden');
+}
+
+function closeSettings() {
+  saveTimes(readTimesFromSelects());
+  refreshDifficultyLabels();
+  $('settings-overlay').classList.add('hidden');
 }
 
 function loadStats() {
@@ -129,6 +210,7 @@ function ensureScene() {
 
 function startMission({ enterVr = false } = {}) {
   persistPrefs();
+  closeSettings();
   $('home-error').textContent = '';
 
   if (state.session) {
@@ -141,6 +223,7 @@ function startMission({ enterVr = false } = {}) {
   const session = startSoloGame({
     difficulty: getDifficulty(),
     seed: getSeed() || undefined,
+    timeMs: loadTimes()[getDifficulty()],
     onTick: ({ remainingMs }) => {
       updateTimer(remainingMs);
       if (state.scene3d) state.scene3d.setTimer(remainingMs);
@@ -202,6 +285,16 @@ function flashStrike() {
 
 $('btn-start')?.addEventListener('click', () => startMission({ enterVr: false }));
 $('btn-start-vr')?.addEventListener('click', () => startMission({ enterVr: true }));
+$('btn-settings')?.addEventListener('click', openSettings);
+$('btn-settings-done')?.addEventListener('click', closeSettings);
+$('btn-settings-reset')?.addEventListener('click', () => {
+  saveTimes({ ...DEFAULT_TIMES });
+  fillTimeSelects();
+  refreshDifficultyLabels();
+});
+$('settings-overlay')?.addEventListener('click', (e) => {
+  if (e.target === $('settings-overlay')) closeSettings();
+});
 
 $('btn-enter-vr')?.addEventListener('click', async () => {
   sound.unlock();

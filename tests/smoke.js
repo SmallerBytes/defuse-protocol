@@ -242,6 +242,16 @@ check('hard is 3 classic + 2 hard', () => {
   }
 });
 
+check('custom timeMs override is used', () => {
+  const noop = { onTick() {}, onStrike() {}, onModuleUpdate() {}, onModuleSolved() {}, onGameOver() {} };
+  const logger = { log() {} };
+  const g = new Game({ difficulty: 'easy', seed: 'TIME-1', events: noop, logger, timeMs: 90 * 1000 });
+  try {
+    assert.strictEqual(g.config.timeMs, 90 * 1000);
+    assert.strictEqual(g.remainingMs, 90 * 1000);
+  } finally { g.destroy(); }
+});
+
 console.log('seeded determinism');
 check('same seed -> identical game', () => {
   const noop = { onTick() {}, onStrike() {}, onModuleUpdate() {}, onModuleSolved() {}, onGameOver() {} };

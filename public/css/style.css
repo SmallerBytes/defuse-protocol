@@ -83,6 +83,39 @@ body {
 .btn.ghost { background: transparent; color: var(--muted); border-color: transparent; margin-top: 12px; width: 100%; }
 .btn.active-role { background: var(--accent); color: #06251a; border-color: var(--accent); }
 
+.home-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px -8px 8px 0;
+}
+.home-toolbar .btn { letter-spacing: 0.12em; }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(6, 8, 12, 0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.overlay.hidden { display: none !important; }
+.settings-card {
+  width: min(420px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+.settings-card h2 {
+  letter-spacing: 0.22em;
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+.settings-lead {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
 .home-actions { display: flex; flex-direction: column; gap: 12px; }
 .home-actions .primary { width: 100%; }
 .home-actions .ghost {

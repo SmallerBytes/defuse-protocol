@@ -69,7 +69,7 @@ class Room {
     });
   }
 
-  startGame({ difficulty, seed }, requesterId) {
+  startGame({ difficulty, seed, timeMs }, requesterId) {
     if (requesterId !== this.hostId) return { error: 'Only the host can start the game.' };
     if (this.game && this.game.status === 'running') return { error: 'A game is already running.' };
     if (!this.defuser()) return { error: 'A Defuser must be assigned before starting.' };
@@ -77,6 +77,7 @@ class Room {
     this.game = new Game({
       difficulty,
       seed,
+      timeMs,
       logger: this.logger,
       events: {
         onTick: (t) => this.io.to(this.code).emit('game:tick', t),

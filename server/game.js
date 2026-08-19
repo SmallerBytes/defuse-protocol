@@ -36,11 +36,15 @@ function makeSerial(rng) {
 
 class Game {
   /**
-   * @param {object} opts { difficulty, seed, events: { onTick, onStrike, onModuleUpdate, onModuleSolved, onGameOver } }
+   * @param {object} opts { difficulty, seed, timeMs, events: { onTick, onStrike, onModuleUpdate, onModuleSolved, onGameOver } }
    */
-  constructor({ difficulty = 'normal', seed, events, logger }) {
+  constructor({ difficulty = 'normal', seed, events, logger, timeMs } = {}) {
     this.difficulty = DIFFICULTY[difficulty] ? difficulty : 'normal';
-    this.config = DIFFICULTY[this.difficulty];
+    this.config = { ...DIFFICULTY[this.difficulty] };
+    const custom = Number(timeMs);
+    if (Number.isFinite(custom) && custom >= 15 * 1000 && custom <= 30 * 60 * 1000) {
+      this.config.timeMs = Math.round(custom);
+    }
     this.seed = seed && String(seed).trim() ? String(seed).trim().toUpperCase() : randomSeed();
     this.events = events;
     this.logger = logger;

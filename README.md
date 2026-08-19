@@ -81,10 +81,9 @@ The **manual is permanent**. Only the bomb layout is random each game (replayabl
 | Medium     | 4       | 5:00 | 3       | +25%                   |
 | Hard       | 5       | 3:00 | 2       | +40%                   |
 
-Easy and Medium shuffle from the classic set (Wire Cutting, Symbol Matching,
-Memory Sequence, Morse Code, Joint Functions). Medium always adds **one**
-hard module. Hard always adds **two** hard modules, shuffled from Weapons
-Release, Radio Net, Threat Plot, and Brevity Code.
+Easy, Medium, and Hard keep those module mixes. Timer length for each
+difficulty can be changed from **SETTINGS** on the home screen (saved in
+the browser). Defaults are 6:00 / 5:00 / 3:00.
 
 ## Project Structure
 
