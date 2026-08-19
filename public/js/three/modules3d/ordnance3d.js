@@ -41,13 +41,6 @@ export function build({ view, send }) {
   lever.rotation.x = 0.55; // SAFE = tilted toward player
   armGroup.add(lever);
 
-  const armLightMat = new THREE.MeshStandardMaterial({
-    color: 0x140a0a, emissive: 0xff3333, emissiveIntensity: 0, roughness: 0.3
-  });
-  const armLight = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.008, 12), armLightMat);
-  armLight.position.set(0, 0.018, -0.032);
-  armGroup.add(armLight);
-
   const armLabelTex = new CanvasTex(160, 64);
   armLabelTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'MASTER ARM', { bg: '#3a2a2a', color: '#e0d6c0', font: `bold 24px 'Consolas', monospace` }));
   const armLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.02), labelMaterial(armLabelTex));
@@ -179,7 +172,6 @@ export function build({ view, send }) {
 
     lever.rotation.x = v.masterArm ? -0.55 : 0.55;
     leverTipMat.color.setHex(v.masterArm ? 0xff3333 : 0xb33030);
-    armLightMat.emissiveIntensity = v.masterArm ? 2.2 : 0;
 
     stationTex.draw((ctx, w, h) => drawReadout(ctx, w, h, v.weapon, { color: '#ffd23f' }));
     fuzeTex.draw((ctx, w, h) => drawLabel(ctx, w, h, v.fuze, {
