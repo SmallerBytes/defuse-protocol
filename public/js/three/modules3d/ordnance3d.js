@@ -61,10 +61,10 @@ export function build({ view, send }) {
   const stationTex = new CanvasTex(320, 96);
   const stationScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.026), displayMaterial(stationTex));
   stationScreen.rotation.x = -Math.PI / 2;
-  stationScreen.position.set(-0.015, 0.0205, 0.012);
+  stationScreen.position.set(-0.015, 0.0205, -0.02);
   const stationHousing = new THREE.Mesh(new RoundedBoxGeometry(0.095, 0.02, 0.036, 2, 0.005),
     new THREE.MeshStandardMaterial({ color: 0x20242c, roughness: 0.5, metalness: 0.3 }));
-  stationHousing.position.set(-0.015, 0.01, 0.012);
+  stationHousing.position.set(-0.015, 0.01, -0.02);
   stationHousing.castShadow = true;
   group.add(stationHousing, stationScreen);
 
@@ -76,7 +76,7 @@ export function build({ view, send }) {
     new THREE.MeshStandardMaterial({ color: 0x16181d }));
   notch.position.set(0, 0.012, -0.006);
   knob.add(notch);
-  knob.position.set(-0.015, 0.011, 0.048);
+  knob.position.set(-0.015, 0.011, 0.022);
   knob.castShadow = true;
   knob.userData.onClick = () => send({ type: 'station' });
   knob.userData.highlightTargets = [knob];
@@ -89,7 +89,7 @@ export function build({ view, send }) {
     new RoundedBoxGeometry(0.055, 0.018, 0.032, 2, 0.004),
     [fuzeSide, fuzeSide, labelMaterial(fuzeTex), fuzeSide, fuzeSide, fuzeSide]
   );
-  fuzeBtn.position.set(0.075, 0.009, 0.012);
+  fuzeBtn.position.set(0.075, 0.009, -0.02);
   fuzeBtn.castShadow = true;
   fuzeBtn.userData.onClick = () => send({ type: 'fuze' });
   fuzeBtn.userData.highlightTargets = [fuzeBtn];
