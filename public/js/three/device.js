@@ -29,8 +29,10 @@ export class Device {
     this.group = new THREE.Group();
     this.entries = new Map();
     this.over = false;
+    this.pest = false;
     this.maxStrikes = payload.maxStrikes;
     this._lastTimerText = null;
+    this._lastTimerMs = payload.timeMs;
 
     this._buildCase(payload.serial);
     this._buildTimer(payload.timeMs, payload.maxStrikes, payload.strikes);
@@ -107,10 +109,12 @@ export class Device {
     bay.add(housing);
 
     this.timerTex = new CanvasTex(512, 224);
-    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.115), displayMaterial(this.timerTex));
+    this.timerScreenMat = displayMaterial(this.timerTex);
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.115), this.timerScreenMat);
     screen.rotation.x = -Math.PI / 2;
     screen.position.set(0, 0.0615, -0.045);
     bay.add(screen);
+    this.timerScreen = screen;
 
     // strike LED row
     this.strikeLeds = [];
@@ -190,10 +194,25 @@ export class Device {
     const text = `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
     if (!force && text === this._lastTimerText) return;
     this._lastTimerText = text;
-    const color = this.over ? (this.won ? '#39d98a' : '#ff2233') : (ms < 60000 ? '#ff4d5e' : '#39d98a');
+    this._lastTimerMs = ms;
+    const normal = this.pest ? '#ff2233' : (ms < 60000 ? '#ff4d5e' : '#39d98a');
+    const color = this.over ? (this.won ? '#39d98a' : '#ff2233') : normal;
     this.timerTex.draw((ctx, w, h) =>
       drawReadout(ctx, w, h, this.over ? (this.won ? 'SAFE' : 'BOOM') : text,
-        { color, font: `bold 130px 'Consolas', monospace` }));
+        { color, bg: this.pest && !this.over ? '#1a0407' : '#04130a', font: `bold 130px 'Consolas', monospace` }));
+  }
+
+  /** Fly parked on the countdown: burn the display red until it's gone. */
+  setPest(on) {
+    if (this.pest === !!on) return;
+    this.pest = !!on;
+    this.setTimer(this._lastTimerMs ?? 0, true);
+    if (!this.pest) this.timerScreenMat.emissiveIntensity = 1.4;
+  }
+
+  timerWorldPos(out) {
+    this.timerScreen.getWorldPosition(out);
+    return out;
   }
 
   setStrikes(n) {
@@ -210,6 +229,9 @@ export class Device {
   tick(dt, t) {
     for (const e of this.entries.values()) {
       if (e.builder && e.builder.tick) e.builder.tick(dt, t, e.solved || this.over);
+    }
+    if (this.pest && !this.over) {
+      this.timerScreenMat.emissiveIntensity = 1.5 + Math.sin(t * 9) * 0.9;
     }
   }
 }

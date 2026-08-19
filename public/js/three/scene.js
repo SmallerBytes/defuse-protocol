@@ -219,6 +219,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   scene.add(fan.group);
   const headPos = new THREE.Vector3();
   const fanPos = new THREE.Vector3();
+  const timerPos = new THREE.Vector3();
   const lookDir = new THREE.Vector3();
   const upDir = new THREE.Vector3();
   let lastLanded = false;
@@ -336,13 +337,16 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       gameOver: !!(device && device.over),
       head: headPos,
       fanOn: fan.on,
-      fanPos
+      fanPos,
+      timerPos: device ? device.timerWorldPos(timerPos) : null
     });
     if (flyState.squashed) {
       lastLanded = false;
+      device?.setPest(false);
       api.onFlyChange?.({ landed: false, squashed: true });
     } else if (flyState.landed !== lastLanded) {
       lastLanded = !!flyState.landed;
+      device?.setPest(lastLanded);
       api.onFlyChange?.({ landed: flyState.landed });
     }
     api.onFlyAudio?.({
@@ -424,7 +428,9 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     },
     gameOver(won) {
       if (!device) return;
+      device.setPest(false);
       device.gameOver(won);
+      lastLanded = false;
       fly.hide();
       fan.setVisible(false);
       api.onFlyAudio?.({ alive: false });

@@ -60,82 +60,68 @@ function ensureSpatial() {
   if (spatial) return spatial;
   const a = ac();
 
-  /* High, piercing fly: tonal zzz + bright wing noise, AM at mosquito-ish pitch. */
-  const wings = noiseLoop(a, 1.8);
+  /* Housefly: a bright harmonic wingbeat (upper partials carry the whine)
+     plus turbulent air, both chopped at the wingbeat rate. */
+  const harm = [0, 0.35, 0.7, 1, 0.92, 0.8, 0.62, 0.48, 0.34, 0.24, 0.16, 0.1];
+  const wave = a.createPeriodicWave(new Float32Array(harm.length), Float32Array.from(harm));
 
-  const hissBp = a.createBiquadFilter();
-  hissBp.type = 'bandpass';
-  hissBp.frequency.value = 5200;
-  hissBp.Q.value = 1.3;
+  const wingA = a.createOscillator();
+  wingA.setPeriodicWave(wave);
+  wingA.frequency.value = 265;
+  const wingB = a.createOscillator();
+  wingB.setPeriodicWave(wave);
+  wingB.frequency.value = 265;
+  wingB.detune.value = 11; // two wings never quite agree
+  const wingBGain = a.createGain();
+  wingBGain.gain.value = 0.6;
 
+  const air = noiseLoop(a, 1.7);
   const airBp = a.createBiquadFilter();
   airBp.type = 'bandpass';
-  airBp.frequency.value = 2400;
-  airBp.Q.value = 1.8;
-
-  const zzz = a.createOscillator();
-  zzz.type = 'sawtooth';
-  zzz.frequency.value = 620;
-  const zzz2 = a.createOscillator();
-  zzz2.type = 'triangle';
-  zzz2.frequency.value = 1240;
-  const zzzBp = a.createBiquadFilter();
-  zzzBp.type = 'bandpass';
-  zzzBp.frequency.value = 3100;
-  zzzBp.Q.value = 2.8;
-  const zzzGain = a.createGain();
-  zzzGain.gain.value = 0.22;
-  const zzz2Gain = a.createGain();
-  zzz2Gain.gain.value = 0.08;
-
-  const hp = a.createBiquadFilter();
-  hp.type = 'highpass';
-  hp.frequency.value = 900;
-  hp.Q.value = 0.7;
+  airBp.frequency.value = 3600;
+  airBp.Q.value = 0.9;
+  const airGain = a.createGain();
+  airGain.gain.value = 0.5;
 
   const am = a.createGain();
   am.gain.value = 0;
+  const chop = a.createOscillator();
+  chop.type = 'sine';
+  chop.frequency.value = 265;
+  const chopDepth = a.createGain();
+  chopDepth.gain.value = 0.34;
+  const chopBias = a.createConstantSource();
+  chopBias.offset.value = 0.66;
+  chop.connect(chopDepth).connect(am.gain);
+  chopBias.connect(am.gain);
+  chop.start();
+  chopBias.start();
 
-  const wingLfo = a.createOscillator();
-  wingLfo.type = 'sine';
-  wingLfo.frequency.value = 540;
-  const wingDepth = a.createGain();
-  wingDepth.gain.value = 0.46;
-  const wingBias = a.createConstantSource();
-  wingBias.offset.value = 0.52;
-  wingLfo.connect(wingDepth).connect(am.gain);
-  wingBias.connect(am.gain);
-  wingLfo.start();
-  wingBias.start();
-  zzz.start();
-  zzz2.start();
-
-  const hissGain = a.createGain();
-  hissGain.gain.value = 0.55;
-  const airGain = a.createGain();
-  airGain.gain.value = 0.4;
-
-  wings.connect(hissBp).connect(hissGain).connect(am);
-  wings.connect(airBp).connect(airGain).connect(am);
-  zzz.connect(zzzBp).connect(zzzGain).connect(am);
-  zzz2.connect(zzz2Gain).connect(am);
+  wingA.connect(am);
+  wingB.connect(wingBGain).connect(am);
+  air.connect(airBp).connect(airGain).connect(am);
+  wingA.start();
+  wingB.start();
 
   const color = a.createBiquadFilter();
-  color.type = 'peaking';
-  color.frequency.value = 3800;
-  color.Q.value = 1.1;
-  color.gain.value = 7;
+  color.type = 'bandpass';
+  color.frequency.value = 1500;
+  color.Q.value = 0.55;
+  const presence = a.createBiquadFilter();
+  presence.type = 'highshelf';
+  presence.frequency.value = 2600;
+  presence.gain.value = 7;
 
   const buzzPanner = a.createPanner();
   buzzPanner.panningModel = 'HRTF';
-  buzzPanner.distanceModel = 'exponential';
-  buzzPanner.refDistance = 0.08;
-  buzzPanner.rolloffFactor = 5.5;
-  buzzPanner.maxDistance = 4;
+  buzzPanner.distanceModel = 'inverse';
+  buzzPanner.refDistance = 0.16;
+  buzzPanner.rolloffFactor = 2.6;
+  buzzPanner.maxDistance = 6;
 
   const buzzGain = a.createGain();
   buzzGain.gain.value = 0;
-  am.connect(hp).connect(color).connect(buzzPanner).connect(buzzGain).connect(a.destination);
+  am.connect(color).connect(presence).connect(buzzPanner).connect(buzzGain).connect(a.destination);
 
   const fanOsc = a.createOscillator();
   fanOsc.type = 'sawtooth';
@@ -158,9 +144,10 @@ function ensureSpatial() {
   fanNoise.start();
 
   spatial = {
-    buzzGain, buzzPanner, wingLfo, zzz, zzz2, fanGain, listener: a.listener, ctx: a,
+    buzzGain, buzzPanner, wingA, wingB, chop, color, presence, airGain,
+    fanGain, listener: a.listener, ctx: a,
     buzzOn: false, fanOn: false,
-    lastFly: null
+    lastFly: null, lastT: 0
   };
   return spatial;
 }
@@ -183,29 +170,47 @@ export const sound = {
     const s = ensureSpatial();
     const now = s.ctx.currentTime;
     s.buzzOn = !!alive;
-    const vol = !alive ? 0 : landed ? 0.03 : 0.2;
-    s.buzzGain.gain.setTargetAtTime(vol, now, alive ? 0.03 : 0.08);
+    const vol = !alive ? 0 : landed ? 0.02 : 0.14;
+    s.buzzGain.gain.setTargetAtTime(vol, now, alive ? 0.035 : 0.08);
     if (!alive || !flyPos || !earPos) {
       s.lastFly = null;
-      if (s.wingLfo) s.wingLfo.frequency.setTargetAtTime(280, now, 0.12);
       return;
     }
 
-    let speed = 0.4;
+    const dtA = Math.max(0.008, Math.min(0.05, now - s.lastT || 0.016));
+    s.lastT = now;
+
+    // Speed drives wingbeat pitch; closing speed drives a small doppler shift.
+    let speed = 0.2;
+    let closing = 0;
     if (s.lastFly) {
       const dx = flyPos.x - s.lastFly.x;
       const dy = flyPos.y - s.lastFly.y;
       const dz = flyPos.z - s.lastFly.z;
-      speed = Math.min(3.2, Math.hypot(dx, dy, dz) / 0.016);
+      speed = Math.min(3, Math.hypot(dx, dy, dz) / dtA);
+      const ex = flyPos.x - earPos.x, ey = flyPos.y - earPos.y, ez = flyPos.z - earPos.z;
+      const d = Math.hypot(ex, ey, ez) || 1;
+      closing = -((dx * ex + dy * ey + dz * ez) / d) / dtA;
     }
     s.lastFly = { x: flyPos.x, y: flyPos.y, z: flyPos.z };
 
+    const near = Math.max(0, 1 - flyPos.distanceTo(earPos) / 0.8);
     const wingHz = landed
-      ? 320 + Math.sin(now * 11) * 18
-      : 540 + speed * 55 + Math.sin(now * 17) * 40 + Math.sin(now * 4.2) * 22;
-    s.wingLfo.frequency.setTargetAtTime(wingHz, now, 0.03);
-    if (s.zzz) s.zzz.frequency.setTargetAtTime(landed ? 480 : 580 + speed * 40, now, 0.04);
-    if (s.zzz2) s.zzz2.frequency.setTargetAtTime(landed ? 960 : 1160 + speed * 70, now, 0.04);
+      ? 26 + Math.sin(now * 7) * 6
+      : 268 + speed * 34 + Math.sin(now * 17.3) * 16 + Math.sin(now * 2.7) * 11;
+    s.wingA.frequency.setTargetAtTime(wingHz, now, 0.03);
+    s.wingB.frequency.setTargetAtTime(wingHz, now, 0.03);
+    s.chop.frequency.setTargetAtTime(wingHz, now, 0.03);
+
+    const doppler = Math.max(-90, Math.min(90, (closing / 343) * 1200 * 6));
+    s.wingA.detune.setTargetAtTime(doppler, now, 0.04);
+    s.wingB.detune.setTargetAtTime(doppler + 11, now, 0.04);
+
+    // Right at the ear it gets brighter and thinner, like it's inside your head.
+    s.color.frequency.setTargetAtTime(landed ? 700 : 1300 + near * 1500 + speed * 260, now, 0.05);
+    s.presence.gain.setTargetAtTime(landed ? 0 : 5 + near * 7, now, 0.08);
+    s.airGain.gain.setTargetAtTime(landed ? 0.12 : 0.4 + near * 0.35, now, 0.06);
+
     if (s.listener.positionX) {
       s.listener.positionX.value = earPos.x;
       s.listener.positionY.value = earPos.y;
