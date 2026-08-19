@@ -579,8 +579,8 @@ var require_logicgrid = __commonJS({
         normal: 2,
         hard: 3
       },
-      intro: "Three captains each own one joint function and lead one planning phase (no two share either). This roster mirrors joint-function thinking used in Squadron Officer School. The Defuser reads intercepted notes from the clipboard on the table, then answers the question on the device.",
-      rosterNote: "Roster is always the same. Only the intercepted notes and the device question change between games."
+      intro: "Three captains each own one joint function and lead one planning phase (no two share either). This mirrors joint-function thinking used in Squadron Officer School. The Defuser reads intercepted notes from the clipboard on the table, then answers the question on the device.",
+      rosterNote: "The table below is an example roster. Draw it on scrap paper and leave Joint Functions and Phases blank \u2014 fill those cells from the intercepted notes. The captain names and the lists of functions and phases never change; only the notes and the device question do."
     };
   }
 });
@@ -688,6 +688,7 @@ var require_logicgrid2 = __commonJS({
           shifts: data.shifts
         },
         clues: [
+          "Copy the example roster onto scrap paper, leaving Joint Functions and Phases blank.",
           "Ask the Defuser to read all INTERCEPTED NOTES from the clipboard on the table.",
           "Assign each captain exactly one joint function and one phase.",
           "Then answer the question shown on the device."

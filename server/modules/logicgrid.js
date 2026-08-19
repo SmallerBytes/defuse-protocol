@@ -83,6 +83,7 @@ function fixedManual() {
       shifts: data.shifts
     },
     clues: [
+      'Copy the example roster onto scrap paper, leaving Joint Functions and Phases blank.',
       'Ask the Defuser to read all INTERCEPTED NOTES from the clipboard on the table.',
       'Assign each captain exactly one joint function and one phase.',
       'Then answer the question shown on the device.'

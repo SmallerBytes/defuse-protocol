@@ -113,10 +113,12 @@
     <h2>5. Joint Functions</h2>
     <p id="logic-intro"></p>
     <p id="logic-note" class="note"></p>
-    <h3>Roster</h3>
+    <h3>Example roster</h3>
     <table id="logic-roster"><thead><tr><th>Captains</th><th>Joint Functions</th><th>Phases</th></tr></thead><tbody></tbody></table>
+    <p id="logic-options" class="note"></p>
     <h3>How to use</h3>
     <ol>
+      <li>Copy the example roster onto scrap paper, leaving Joint Functions and Phases blank.</li>
       <li>Have the Defuser read <strong>all</strong> INTERCEPTED NOTES from the clipboard on the table (every clue is listed).</li>
       <li>Assign each captain exactly one joint function and one phase using those notes.</li>
       <li>Answer the question shown on the device.</li>
@@ -246,9 +248,11 @@
     const rbody = document.querySelector('#logic-roster tbody');
     for (let i = 0; i < logic.engineers.length; i++) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${logic.engineers[i]}</td><td>${logic.panels[i]}</td><td>${logic.shifts[i]}</td>`;
+      tr.innerHTML = `<td>${logic.engineers[i]}</td><td></td><td></td>`;
       rbody.appendChild(tr);
     }
+    document.getElementById('logic-options').textContent =
+      `Joint functions: ${logic.panels.join(', ')}. Phases: ${logic.shifts.join(', ')}.`;
 
     document.getElementById('ordnance-intro').textContent = ordnance.intro;
     const wbody = document.querySelector('#ordnance-weapons tbody');

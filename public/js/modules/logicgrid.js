@@ -11,11 +11,13 @@ export const logicgrid = {
     if (manual.rosterNote) {
       html += `<p class="manual-intro"><em>${manual.rosterNote}</em></p>`;
     }
-    html += `<h3>Roster</h3><table class="manual-table"><tr><th>${labels.engineers}</th><th>${labels.panels}</th><th>${labels.shifts}</th></tr>`;
+    html += `<h3>Example roster</h3><table class="manual-table"><tr><th>${labels.engineers}</th><th>${labels.panels}</th><th>${labels.shifts}</th></tr>`;
     for (let i = 0; i < e.engineers.length; i++) {
-      html += `<tr><td>${e.engineers[i]}</td><td>${e.panels[i]}</td><td>${e.shifts[i]}</td></tr>`;
+      html += `<tr><td>${e.engineers[i]}</td><td></td><td></td></tr>`;
     }
-    html += `</table><h3>How to use</h3><ol class="clue-list">`;
+    html += `</table>`;
+    html += `<p class="manual-intro"><em>Joint functions: ${e.panels.join(', ')}. Phases: ${e.shifts.join(', ')}.</em></p>`;
+    html += `<h3>How to use</h3><ol class="clue-list">`;
     html += (manual.clues || []).map((c) => `<li>${c}</li>`).join('');
     html += `</ol>`;
     el.innerHTML = html;
