@@ -86,7 +86,7 @@ export class Device {
     // engraved serial plate on the front face
     const tex = new CanvasTex(384, 112);
     tex.draw((ctx, w, h) => drawLabel(ctx, w, h, `SN ${serial}`, {
-      bg: '#b9b3a0', color: '#2c2c28', font: `bold 56px 'Consolas', monospace`
+      bg: '#b9b3a0', color: '#000000', font: `bold 56px 'Consolas', monospace`
     }));
     const sideMat = new THREE.MeshStandardMaterial({ color: 0x8d8775, metalness: 0.6, roughness: 0.5 });
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.07, 0.008),

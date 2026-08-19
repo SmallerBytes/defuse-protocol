@@ -36,12 +36,11 @@ export function displayMaterial(canvasTex) {
   });
 }
 
-/** Printed-label material (keycap legends, engraved plates). */
+/** Printed-label material (keycap legends, engraved plates).
+ *  Unlit so Quest lighting / ACES tone mapping cannot wash the ink out. */
 export function labelMaterial(canvasTex) {
-  return new THREE.MeshStandardMaterial({
-    map: canvasTex.texture,
-    roughness: 0.55,
-    metalness: 0.05
+  return new THREE.MeshBasicMaterial({
+    map: canvasTex.texture
   });
 }
 
@@ -60,20 +59,21 @@ export function drawReadout(ctx, w, h, text, { color = '#39d98a', bg = '#04130a'
 }
 
 /** Draw a printed keycap/plate label (light background, dark text). */
-export function drawLabel(ctx, w, h, text, { bg = '#e6e0cb', color = '#181818', font = null } = {}) {
+export function drawLabel(ctx, w, h, text, { bg = '#e6e0cb', color = '#000000', font = null } = {}) {
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-  // subtle plastic shading so the print doesn't look like flat UI
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, 'rgba(255,255,255,0.18)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.12)');
-  ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
   ctx.font = font || `bold ${Math.floor(h * 0.6)}px 'Consolas', monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  const x = w / 2;
+  const y = h / 2 + h * 0.04;
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, h * 0.045);
+  ctx.strokeText(text, x, y);
   ctx.fillStyle = color;
-  ctx.fillText(text, w / 2, h / 2 + h * 0.04);
+  ctx.fillText(text, x, y);
 }
 
 /** Word-wrapped multi-line readout (logic grid question screen). */

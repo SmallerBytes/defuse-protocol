@@ -99,7 +99,7 @@ export function build({ view, send }) {
 
   // TX key
   const txTex = new CanvasTex(160, 96);
-  txTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'TX', { bg: '#c43240', color: '#ffffff' }));
+  txTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'TX', { bg: '#c43240', color: '#000000' }));
   const txSide = new THREE.MeshStandardMaterial({ color: 0x8c1f2b, roughness: 0.5 });
   const tx = new THREE.Mesh(new RoundedBoxGeometry(0.062, 0.026, 0.04, 2, 0.007),
     [txSide, txSide, labelMaterial(txTex), txSide, txSide, txSide]);
