@@ -1100,6 +1100,275 @@ var require_comms2 = __commonJS({
   }
 });
 
+// data/modules/threatplot.json
+var require_threatplot = __commonJS({
+  "data/modules/threatplot.json"(exports, module) {
+    module.exports = {
+      sizesByDifficulty: { easy: 5, normal: 6, hard: 6 },
+      samsByDifficulty: { easy: 3, normal: 4, hard: 5 },
+      minPathByDifficulty: { easy: 4, normal: 5, hard: 7 },
+      samTypes: [
+        { type: "SA-3", radius: 0, coverage: "its own cell only" },
+        { type: "SA-6", radius: 1, coverage: "its cell and all 8 neighboring cells" },
+        { type: "SA-2", radius: 2, coverage: "its cell and every cell up to 2 cells away in any direction (diagonals count as one step)" }
+      ],
+      intro: "The Defuser's scope shows the jet, the target, SAM sites with their type, and \u2014 on long sorties \u2014 a tanker anchor (T). The scope does NOT show SAM coverage rings. The Defuser reads out the grid, the SAM types, and their cells; the Experts mark each site's coverage from the table below, find a safe route, and talk the jet to the target one step at a time (N / E / S / W). Entering covered airspace or leaving the grid is a strike and the jet resets to its start cell. If a tanker anchor is shown, the jet must pass through it BEFORE reaching the target \u2014 hitting the target dry is a strike.",
+      rules: [
+        "Columns are letters (A, B, C\u2026) left to right; rows are numbers (1, 2, 3\u2026) top to bottom.",
+        "Mark each SAM's coverage using the table, then route the jet only through uncovered cells.",
+        "If a tanker anchor (T) is on the scope, the jet must pass through it before the target; the target only accepts a refueled jet.",
+        "A strike resets the jet to its start cell AND clears any refueling \u2014 plan the whole route before calling steps."
+      ]
+    };
+  }
+});
+
+// server/modules/threatplot.js
+var require_threatplot2 = __commonJS({
+  "server/modules/threatplot.js"(exports, module) {
+    var data = require_threatplot();
+    var TYPE = "threatplot";
+    var NAME = "Threat Plot";
+    var COL_LETTERS = "ABCDEFGH";
+    var DIRS = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
+    function cellName(c) {
+      return `${COL_LETTERS[c.x]}${c.y + 1}`;
+    }
+    function radiusOf(type) {
+      return data.samTypes.find((s) => s.type === type).radius;
+    }
+    function coverageSet(sams) {
+      const covered = /* @__PURE__ */ new Set();
+      for (const sam of sams) {
+        const r = radiusOf(sam.type);
+        for (let dx = -r; dx <= r; dx++) {
+          for (let dy = -r; dy <= r; dy++) {
+            covered.add(`${sam.x + dx},${sam.y + dy}`);
+          }
+        }
+      }
+      return covered;
+    }
+    function findPath(size, covered, start, target, tanker) {
+      const key = (x, y, ref) => `${x},${y},${ref ? 1 : 0}`;
+      const startRef = !tanker;
+      const queue = [{ x: start.x, y: start.y, ref: startRef, steps: [] }];
+      const seen = /* @__PURE__ */ new Set([key(start.x, start.y, startRef)]);
+      while (queue.length) {
+        const cur = queue.shift();
+        if (cur.x === target.x && cur.y === target.y && cur.ref) return cur.steps;
+        for (const [dir, [dx, dy]] of Object.entries(DIRS)) {
+          const nx = cur.x + dx;
+          const ny = cur.y + dy;
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+          if (covered.has(`${nx},${ny}`)) continue;
+          const ref = cur.ref || tanker && nx === tanker.x && ny === tanker.y;
+          const k = key(nx, ny, ref);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          queue.push({ x: nx, y: ny, ref, steps: [...cur.steps, dir] });
+        }
+      }
+      return null;
+    }
+    function fixedManual() {
+      return {
+        intro: data.intro,
+        samTypes: data.samTypes.map((s) => ({ type: s.type, coverage: s.coverage })),
+        rules: data.rules
+      };
+    }
+    function generate(ctx) {
+      const { rng, difficulty } = ctx;
+      const size = data.sizesByDifficulty[difficulty];
+      const samCount = data.samsByDifficulty[difficulty];
+      const minPath = data.minPathByDifficulty[difficulty];
+      const needTanker = difficulty === "hard";
+      const samWeights = ["SA-3", "SA-3", "SA-6", "SA-6", "SA-2"];
+      let layout = null;
+      for (let attempt = 0; attempt < 400 && !layout; attempt++) {
+        const rndCell = () => ({ x: rng.int(0, size - 1), y: rng.int(0, size - 1) });
+        const start = rndCell();
+        let target = rndCell();
+        if (target.x === start.x && target.y === start.y) continue;
+        if (Math.abs(target.x - start.x) + Math.abs(target.y - start.y) < 3) continue;
+        let tanker = null;
+        if (needTanker) {
+          tanker = rndCell();
+          if (tanker.x === start.x && tanker.y === start.y || tanker.x === target.x && tanker.y === target.y) continue;
+        }
+        const reserved = new Set([start, target, ...tanker ? [tanker] : []].map((c) => `${c.x},${c.y}`));
+        const open = [];
+        for (let x = 0; x < size; x++) for (let y = 0; y < size; y++) {
+          if (!reserved.has(`${x},${y}`)) open.push({ x, y });
+        }
+        if (open.length < samCount) continue;
+        const samCells = rng.shuffle(open).slice(0, samCount);
+        const sams = samCells.map((c) => ({ ...c, type: rng.pick(samWeights) }));
+        const covered = coverageSet(sams);
+        if ([start, target, ...tanker ? [tanker] : []].some((c) => covered.has(`${c.x},${c.y}`))) continue;
+        const path = findPath(size, covered, start, target, tanker);
+        if (!path || path.length < minPath) continue;
+        layout = { size, start, target, tanker, sams };
+      }
+      if (!layout) {
+        layout = {
+          size,
+          start: { x: 0, y: 0 },
+          target: { x: size - 1, y: size - 1 },
+          tanker: needTanker ? { x: size - 1, y: 0 } : null,
+          sams: [{ x: Math.floor(size / 2), y: Math.floor(size / 2), type: "SA-3" }]
+        };
+      }
+      const state = {
+        ...layout,
+        pos: { ...layout.start },
+        refueled: !layout.tanker
+      };
+      return { state, manual: fixedManual(), view: view(state) };
+    }
+    function view(state) {
+      return {
+        size: state.size,
+        start: cellName(state.start),
+        target: cellName(state.target),
+        tanker: state.tanker ? cellName(state.tanker) : null,
+        sams: state.sams.map((s) => ({ type: s.type, cell: cellName(s) })),
+        player: cellName(state.pos),
+        refueled: state.refueled
+      };
+    }
+    function resetToStart(state) {
+      state.pos = { ...state.start };
+      state.refueled = !state.tanker;
+    }
+    function action(state, act) {
+      if (act.type !== "step" || !DIRS[act.dir]) return { status: "ok", view: view(state) };
+      const [dx, dy] = DIRS[act.dir];
+      const nx = state.pos.x + dx;
+      const ny = state.pos.y + dy;
+      const covered = coverageSet(state.sams);
+      const outOfBounds = nx < 0 || ny < 0 || nx >= state.size || ny >= state.size;
+      if (outOfBounds || covered.has(`${nx},${ny}`)) {
+        const reason = outOfBounds ? "left the grid" : "entered threat coverage";
+        resetToStart(state);
+        return { status: "strike", view: view(state), detail: reason };
+      }
+      state.pos = { x: nx, y: ny };
+      if (state.tanker && nx === state.tanker.x && ny === state.tanker.y) state.refueled = true;
+      if (nx === state.target.x && ny === state.target.y) {
+        if (state.tanker && !state.refueled) {
+          resetToStart(state);
+          return { status: "strike", view: view(state), detail: "reached target without refueling" };
+        }
+        return { status: "solved", view: view(state), detail: "target reached" };
+      }
+      return { status: "ok", view: view(state) };
+    }
+    module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };
+  }
+});
+
+// data/modules/brevity.json
+var require_brevity = __commonJS({
+  "data/modules/brevity.json"(exports, module) {
+    module.exports = {
+      words: ["BANDIT", "BOGEY", "SPIKE", "MUD", "TALLY", "NO JOY", "JUDY", "WILCO", "BINGO", "JOKER", "SPLASH", "ANGELS"],
+      displayRead: {
+        BANDIT: 3,
+        BOGEY: 1,
+        SPIKE: 5,
+        MUD: 2,
+        TALLY: 6,
+        "NO JOY": 4,
+        JUDY: 2,
+        WILCO: 5,
+        BINGO: 1,
+        JOKER: 6,
+        SPLASH: 4,
+        ANGELS: 3
+      },
+      readPress: {
+        BANDIT: "WILCO",
+        BOGEY: "TALLY",
+        SPIKE: "ANGELS",
+        MUD: "BINGO",
+        TALLY: "SPIKE",
+        "NO JOY": "JOKER",
+        JUDY: "MUD",
+        WILCO: "BOGEY",
+        BINGO: "SPLASH",
+        JOKER: "JUDY",
+        SPLASH: "BANDIT",
+        ANGELS: "NO JOY"
+      },
+      stagesByDifficulty: { easy: 1, normal: 2, hard: 3 },
+      intro: "The device CRT shows a brevity code word above six buttons, each labeled with a brevity word. For each stage: (1) find the DISPLAY word in Table 1 \u2014 it names the button POSITION to read (numbered left to right, top to bottom, 1\u20136); (2) find the word printed on THAT button in Table 2 \u2014 it names the word to PRESS. Press the button labeled with that word to clear the stage. A wrong press is a strike and the stage stays up. Button labels reshuffle every stage."
+    };
+  }
+});
+
+// server/modules/brevity.js
+var require_brevity2 = __commonJS({
+  "server/modules/brevity.js"(exports, module) {
+    var data = require_brevity();
+    var TYPE = "brevity";
+    var NAME = "Brevity Code";
+    function fixedManual() {
+      return {
+        intro: data.intro,
+        table1: data.words.map((w) => ({ word: w, position: data.displayRead[w] })),
+        table2: data.words.map((w) => ({ read: w, press: data.readPress[w] }))
+      };
+    }
+    function makeStage(rng) {
+      const display = rng.pick(data.words);
+      const readPos = data.displayRead[display];
+      for (let attempt = 0; attempt < 300; attempt++) {
+        const buttons2 = rng.shuffle(data.words.slice()).slice(0, 6);
+        const readWord2 = buttons2[readPos - 1];
+        const answer2 = data.readPress[readWord2];
+        if (buttons2.includes(answer2)) return { display, buttons: buttons2, answer: answer2 };
+      }
+      const buttons = rng.shuffle(data.words.slice()).slice(0, 6);
+      const readWord = buttons[readPos - 1];
+      const answer = data.readPress[readWord];
+      buttons[readPos % 6] = answer;
+      return { display, buttons, answer };
+    }
+    function generate(ctx) {
+      const { rng, difficulty } = ctx;
+      const count = data.stagesByDifficulty[difficulty];
+      const stages = Array.from({ length: count }, () => makeStage(rng));
+      const state = { stages, stage: 0 };
+      return { state, manual: fixedManual(), view: view(state) };
+    }
+    function view(state) {
+      const s = state.stages[state.stage];
+      return {
+        stage: state.stage + 1,
+        total: state.stages.length,
+        display: s ? s.display : null,
+        buttons: s ? s.buttons : []
+      };
+    }
+    function action(state, act) {
+      if (act.type !== "press") return { status: "ok", view: view(state) };
+      const s = state.stages[state.stage];
+      if (!s || !s.buttons.includes(act.label)) return { status: "ok", view: view(state) };
+      if (act.label === s.answer) {
+        state.stage++;
+        if (state.stage >= state.stages.length) {
+          return { status: "solved", view: view(state), detail: "all brevity stages cleared" };
+        }
+        return { status: "ok", view: view(state), detail: "stage cleared" };
+      }
+      return { status: "strike", view: view(state), detail: `pressed ${act.label}, expected ${s.answer}` };
+    }
+    module.exports = { type: TYPE, name: NAME, generate, action, fixedManual };
+  }
+});
+
 // server/modules/index.js
 var require_modules = __commonJS({
   "server/modules/index.js"(exports, module) {
@@ -1110,7 +1379,9 @@ var require_modules = __commonJS({
     var logicgrid = require_logicgrid2();
     var ordnance = require_ordnance2();
     var comms = require_comms2();
-    var MODULES = [wires, symbols, memory, morse, logicgrid, ordnance, comms];
+    var threatplot = require_threatplot2();
+    var brevity = require_brevity2();
+    var MODULES = [wires, symbols, memory, morse, logicgrid, ordnance, comms, threatplot, brevity];
     var registry = new Map(MODULES.map((m) => [m.type, m]));
     function getModule(type) {
       const mod = registry.get(type);
@@ -1134,7 +1405,8 @@ var require_game = __commonJS({
       normal: { moduleCount: 5, timeMs: 5 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
       hard: { moduleCount: 5, timeMs: 3 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
     };
-    var HARD_REQUIRED = ["ordnance", "comms"];
+    var AF_MODULES = ["ordnance", "comms", "threatplot", "brevity"];
+    var HARD_AF_COUNT = 3;
     function makeSerial(rng) {
       const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
       const digits = "0123456789";
@@ -1159,8 +1431,11 @@ var require_game = __commonJS({
         const allTypes = MODULES.map((m) => m.type);
         let types;
         if (this.difficulty === "hard") {
-          const rest = rng.shuffle(allTypes.filter((t) => !HARD_REQUIRED.includes(t)));
-          types = rng.shuffle([...HARD_REQUIRED, ...rest.slice(0, this.config.moduleCount - HARD_REQUIRED.length)]);
+          const af = rng.shuffle(AF_MODULES.slice()).slice(0, HARD_AF_COUNT);
+          const rest = rng.shuffle(allTypes.filter((t) => !af.includes(t)));
+          types = rng.shuffle([...af, ...rest.slice(0, this.config.moduleCount - af.length)]);
+        } else if (this.difficulty === "easy") {
+          types = rng.shuffle(allTypes.filter((t) => !AF_MODULES.includes(t))).slice(0, this.config.moduleCount);
         } else {
           types = rng.shuffle(allTypes).slice(0, this.config.moduleCount);
         }

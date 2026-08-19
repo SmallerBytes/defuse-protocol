@@ -12,7 +12,8 @@ const DIFFICULTY = {
   hard:   { moduleCount: 5, timeMs: 3 * 60 * 1000,   maxStrikes: 2, strikeAccel: 0.4 }
 };
 
-const HARD_REQUIRED = ['ordnance', 'comms'];
+const AF_MODULES = ['ordnance', 'comms', 'threatplot', 'brevity'];
+const HARD_AF_COUNT = 3;
 
 function makeSerial(rng) {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -42,13 +43,16 @@ class Game {
     this.status = 'running'; // running | won | lost
     this.startedAt = Date.now();
 
-    // Pick module types. Hard always includes the demanding AF modules;
-    // easy keeps to the classic five for a gentler intro.
+    // Pick module types. Hard always draws three of the demanding AF
+    // modules; easy keeps to the classic five for a gentler intro.
     const allTypes = MODULES.map((m) => m.type);
     let types;
     if (this.difficulty === 'hard') {
-      const rest = rng.shuffle(allTypes.filter((t) => !HARD_REQUIRED.includes(t)));
-      types = rng.shuffle([...HARD_REQUIRED, ...rest.slice(0, this.config.moduleCount - HARD_REQUIRED.length)]);
+      const af = rng.shuffle(AF_MODULES.slice()).slice(0, HARD_AF_COUNT);
+      const rest = rng.shuffle(allTypes.filter((t) => !af.includes(t)));
+      types = rng.shuffle([...af, ...rest.slice(0, this.config.moduleCount - af.length)]);
+    } else if (this.difficulty === 'easy') {
+      types = rng.shuffle(allTypes.filter((t) => !AF_MODULES.includes(t))).slice(0, this.config.moduleCount);
     } else {
       types = rng.shuffle(allTypes).slice(0, this.config.moduleCount);
     }

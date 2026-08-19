@@ -66,8 +66,10 @@ The Node server under `server/` is optional legacy multiplayer code for local de
 | Memory Sequence | Random displays + shuffled labels                           | Fixed per-stage lookup rules                       |
 | Morse Code      | Random word flashed in Morse                                | Fixed alphabet + word→frequency table              |
 | Joint Functions | Captains × functions × phases (SOS)                        | Fixed roster; notes on table clipboard             |
-| Weapons Release | Target cards (moving/urban/hardened/weather)               | Fixed weaponeering rules + weapons rack            |
-| Radio Net       | Callsigns + letter-pair challenges                          | Fixed comms annex + authentication table           |
+| Weapons Release | Stores panel: ARM lever, station knob, fuze, code wheels, PICKLE | Weaponeering rules, fuze/code rules, release checklist |
+| Radio Net       | UHF radio: coarse/fine tuning, XMIT key, A–Z letter dial   | Fixed comms annex + phonetic authentication matrix |
+| Threat Plot     | Radar scope: jet, SAM sites, target — no coverage rings    | SAM coverage table + route rules (talk the jet through) |
+| Brevity Code    | CRT word above six brevity-word buttons                    | Two-step indirection tables (word → position → word) |
 
 The **manual is permanent**. Only the bomb layout is random each game (replayable via seed).
 
@@ -79,8 +81,9 @@ The **manual is permanent**. Only the bomb layout is random each game (replayabl
 | Normal     | 5       | 5:00 | 3       | +25%                   |
 | Hard       | 5       | 3:00 | 2       | +40%                   |
 
-Hard always includes **Weapons Release** and **Radio Net** and three Joint
-Functions questions; Easy keeps to the classic module set.
+Hard always includes **three of the four Air Force modules** (Weapons Release,
+Radio Net, Threat Plot, Brevity Code) chosen per seed; Easy keeps to the
+classic module set.
 
 ## Project Structure
 

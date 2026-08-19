@@ -147,6 +147,24 @@
     <table id="comms-auth"><thead><tr id="comms-auth-head"><th></th></tr></thead><tbody></tbody></table>
   </div>
 
+  <div class="sheet" id="sec-threatplot">
+    <h2>8. Threat Plot</h2>
+    <p id="threat-intro"></p>
+    <h3>SAM coverage (the Defuser cannot see this)</h3>
+    <table id="threat-sams"><thead><tr><th>SAM</th><th>Threat coverage</th></tr></thead><tbody></tbody></table>
+    <h3>Route rules</h3>
+    <ol id="threat-rules"></ol>
+  </div>
+
+  <div class="sheet" id="sec-brevity">
+    <h2>9. Brevity Code</h2>
+    <p id="brevity-intro"></p>
+    <h3>Table 1 — display word → button position to read</h3>
+    <table id="brevity-t1"><thead><tr><th>Display word</th><th>Read button position</th></tr></thead><tbody></tbody></table>
+    <h3>Table 2 — word on that button → word to press</h3>
+    <table id="brevity-t2"><thead><tr><th>Word you read</th><th>Word to press</th></tr></thead><tbody></tbody></table>
+  </div>
+
   <script type="module">
     const ORDINALS = ['first', 'second', 'third', 'fourth'];
     function insText(ins) {
@@ -159,14 +177,16 @@
       }
     }
 
-    const [wires, symbols, memory, morse, logic, ordnance, comms] = await Promise.all([
+    const [wires, symbols, memory, morse, logic, ordnance, comms, threat, brevity] = await Promise.all([
       fetch('data/modules/wires.json').then((r) => r.json()),
       fetch('data/modules/symbols.json').then((r) => r.json()),
       fetch('data/modules/memory.json').then((r) => r.json()),
       fetch('data/modules/morse.json').then((r) => r.json()),
       fetch('data/modules/logicgrid.json').then((r) => r.json()),
       fetch('data/modules/ordnance.json').then((r) => r.json()),
-      fetch('data/modules/comms.json').then((r) => r.json())
+      fetch('data/modules/comms.json').then((r) => r.json()),
+      fetch('data/modules/threatplot.json').then((r) => r.json()),
+      fetch('data/modules/brevity.json').then((r) => r.json())
     ]);
 
     document.getElementById('wires-intro').textContent = wires.intro;
@@ -269,6 +289,29 @@
       tr.innerHTML = `<th>${comms.matrixLabels[i]}</th>` + row.map((l) => `<td style="text-align:center"><b>${l}</b></td>`).join('');
       abody.appendChild(tr);
     });
+
+    document.getElementById('threat-intro').textContent = threat.intro;
+    const sbody = document.querySelector('#threat-sams tbody');
+    for (const s of threat.samTypes) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${s.type}</b></td><td>${s.coverage}</td>`;
+      sbody.appendChild(tr);
+    }
+    fill('threat-rules', threat.rules, 'li');
+
+    document.getElementById('brevity-intro').textContent = brevity.intro;
+    const b1 = document.querySelector('#brevity-t1 tbody');
+    for (const [word, pos] of Object.entries(brevity.displayRead)) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${word}</b></td><td>${pos}</td>`;
+      b1.appendChild(tr);
+    }
+    const b2 = document.querySelector('#brevity-t2 tbody');
+    for (const [read, press] of Object.entries(brevity.readPress)) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${read}</td><td><b>${press}</b></td>`;
+      b2.appendChild(tr);
+    }
   </script>
 </body>
 </html>
