@@ -6,7 +6,7 @@
  */
 const assert = require('assert');
 const { io } = require('socket.io-client');
-const { Game } = require('../server/game');
+const { Game, CLASSIC_MODULES } = require('../server/game');
 
 const PORT = process.argv[2] || process.env.PORT || 3210;
 const URL = `http://localhost:${PORT}`;
@@ -58,11 +58,11 @@ async function main() {
   console.log('ok - seeded replay reproduces the server game');
 
   // --- expert must not be able to act on modules ---
-  const wiresDef = dPayload.modules.find((m) => m.type === 'wires');
+  const firstDef = dPayload.modules[0];
   let expertCaused = false;
   const spy = () => { expertCaused = true; };
   defuser.on('module:update', spy);
-  expert.emit('module:action', { moduleId: wiresDef.id, action: { type: 'cut', index: 1 } });
+  expert.emit('module:action', { moduleId: firstDef.id, action: { type: 'cut', index: 1 } });
   await wait(400);
   assert.strictEqual(expertCaused, false, 'expert actions ignored');
   defuser.off('module:update', spy);
@@ -75,11 +75,22 @@ async function main() {
   defuser.on('module:solved', ({ moduleId }) => solvedIds.add(moduleId));
   const overP = once(defuser, 'game:over');
 
-  // --- deliberate strike ---
+  // --- deliberate strike on a classic module (always present) ---
   const strikeP = once(defuser, 'game:strike');
-  const wiresShadow = shadow.modules.find((m) => m.type === 'wires');
-  const wrongWire = wiresShadow.state.solution === 1 ? 2 : 1;
-  defuser.emit('module:action', { moduleId: wiresShadow.id, action: { type: 'cut', index: wrongWire } });
+  const strikeMod = shadow.modules.find((m) => CLASSIC_MODULES.includes(m.type));
+  const ss = strikeMod.state;
+  let bad;
+  if (strikeMod.type === 'wires') bad = { type: 'cut', index: ss.solution === 1 ? 2 : 1 };
+  else if (strikeMod.type === 'symbols') bad = { type: 'press', glyph: 'XXXX' };
+  else if (strikeMod.type === 'memory') bad = { type: 'press', position: 9 };
+  else if (strikeMod.type === 'morse') {
+    const wrong = ss.frequencies.findIndex((_, i) => i !== ss.frequencies.indexOf(ss.solutionFreq));
+    defuser.emit('module:action', { moduleId: strikeMod.id, action: { type: 'tune', index: wrong } });
+    await wait(80);
+    bad = { type: 'transmit' };
+  } else if (strikeMod.type === 'logicgrid') bad = { type: 'answer', option: '__NOPE__' };
+  else bad = { type: 'press', glyph: 'XXXX' };
+  defuser.emit('module:action', { moduleId: strikeMod.id, action: bad });
   const strike = await strikeP;
   assert.strictEqual(strike.strikes, 1);
   console.log('ok - wrong action produces a strike');
@@ -198,24 +209,26 @@ async function main() {
   // --- memory: solve interactively using the shadow rule table + live views ---
   const memShadow = shadow.modules.find((m) => m.type === 'memory');
   const memDef = dPayload.modules.find((m) => m.type === 'memory');
-  const history = [];
-  let view = latestViews[memDef.id] || memDef.view;
-  let guard = 0;
-  while (!solvedIds.has(memDef.id) && guard++ < 12) {
-    const ins = memShadow.state.table[view.stage - 1][view.display];
-    let pos;
-    switch (ins.kind) {
-      case 'position': pos = ins.n; break;
-      case 'label': pos = view.labels.indexOf(ins.n) + 1; break;
-      case 'samePosition': pos = history[ins.stage - 1].position; break;
-      case 'sameLabel': pos = view.labels.indexOf(history[ins.stage - 1].label) + 1; break;
+  if (memShadow && memDef) {
+    const history = [];
+    let view = latestViews[memDef.id] || memDef.view;
+    let guard = 0;
+    while (!solvedIds.has(memDef.id) && guard++ < 12) {
+      const ins = memShadow.state.table[view.stage - 1][view.display];
+      let pos;
+      switch (ins.kind) {
+        case 'position': pos = ins.n; break;
+        case 'label': pos = view.labels.indexOf(ins.n) + 1; break;
+        case 'samePosition': pos = history[ins.stage - 1].position; break;
+        case 'sameLabel': pos = view.labels.indexOf(history[ins.stage - 1].label) + 1; break;
+      }
+      history.push({ position: pos, label: view.labels[pos - 1] });
+      defuser.emit('module:action', { moduleId: memDef.id, action: { type: 'press', position: pos } });
+      await wait(250);
+      view = latestViews[memDef.id] || view;
     }
-    history.push({ position: pos, label: view.labels[pos - 1] });
-    defuser.emit('module:action', { moduleId: memDef.id, action: { type: 'press', position: pos } });
-    await wait(250);
-    view = latestViews[memDef.id] || view;
+    assert.ok(solvedIds.has(memDef.id), 'memory module solved without strikes');
   }
-  assert.ok(solvedIds.has(memDef.id), 'memory module solved without strikes');
 
   const summary = await overP;
   assert.strictEqual(summary.result, 'won', `expected win, got ${summary.result} (${summary.reason})`);

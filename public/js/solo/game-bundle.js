@@ -1399,14 +1399,21 @@ var require_modules = __commonJS({
 var require_game = __commonJS({
   "server/game.js"(exports, module) {
     var { Rng, randomSeed } = require_rng();
-    var { getModule, MODULES } = require_modules();
+    var { getModule } = require_modules();
     var DIFFICULTY = {
       easy: { moduleCount: 3, timeMs: 6 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.15 },
-      normal: { moduleCount: 5, timeMs: 5 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
+      normal: { moduleCount: 4, timeMs: 5 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
       hard: { moduleCount: 5, timeMs: 3 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
     };
-    var AF_MODULES = ["ordnance", "comms", "threatplot", "brevity"];
-    var HARD_AF_COUNT = 3;
+    var CLASSIC_MODULES = ["wires", "symbols", "memory", "morse", "logicgrid"];
+    var HARD_MODULES = ["ordnance", "comms", "threatplot", "brevity"];
+    function pickTypes(rng, difficulty) {
+      const classic = rng.shuffle(CLASSIC_MODULES.slice());
+      const hard = rng.shuffle(HARD_MODULES.slice());
+      if (difficulty === "easy") return rng.shuffle(classic.slice(0, 3));
+      if (difficulty === "hard") return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 2)]);
+      return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 1)]);
+    }
     function makeSerial(rng) {
       const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
       const digits = "0123456789";
@@ -1428,17 +1435,7 @@ var require_game = __commonJS({
         this.remainingMs = this.config.timeMs;
         this.status = "running";
         this.startedAt = Date.now();
-        const allTypes = MODULES.map((m) => m.type);
-        let types;
-        if (this.difficulty === "hard") {
-          const af = rng.shuffle(AF_MODULES.slice()).slice(0, HARD_AF_COUNT);
-          const rest = rng.shuffle(allTypes.filter((t) => !af.includes(t)));
-          types = rng.shuffle([...af, ...rest.slice(0, this.config.moduleCount - af.length)]);
-        } else if (this.difficulty === "easy") {
-          types = rng.shuffle(allTypes.filter((t) => !AF_MODULES.includes(t))).slice(0, this.config.moduleCount);
-        } else {
-          types = rng.shuffle(allTypes).slice(0, this.config.moduleCount);
-        }
+        const types = pickTypes(rng, this.difficulty);
         this.modules = types.map((type, i) => {
           const mod = getModule(type);
           const ctx = { rng: rng.child(`${type}#${i}`), difficulty: this.difficulty, serial: this.serial };
@@ -1551,7 +1548,7 @@ var require_game = __commonJS({
         clearInterval(this._interval);
       }
     };
-    module.exports = { Game, DIFFICULTY };
+    module.exports = { Game, DIFFICULTY, CLASSIC_MODULES, HARD_MODULES };
   }
 });
 export default require_game();

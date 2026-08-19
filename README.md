@@ -78,12 +78,13 @@ The **manual is permanent**. Only the bomb layout is random each game (replayabl
 | Difficulty | Modules | Time | Strikes | Timer accel per strike |
 | ---------- | ------- | ---- | ------- | ---------------------- |
 | Easy       | 3       | 6:00 | 3       | +15%                   |
-| Normal     | 5       | 5:00 | 3       | +25%                   |
+| Medium     | 4       | 5:00 | 3       | +25%                   |
 | Hard       | 5       | 3:00 | 2       | +40%                   |
 
-Hard always includes **three of the four Air Force modules** (Weapons Release,
-Radio Net, Threat Plot, Brevity Code) chosen per seed; Easy keeps to the
-classic module set.
+Easy and Medium shuffle from the classic set (Wire Cutting, Symbol Matching,
+Memory Sequence, Morse Code, Joint Functions). Medium always adds **one**
+hard module. Hard always adds **two** hard modules, shuffled from Weapons
+Release, Radio Net, Threat Plot, and Brevity Code.
 
 ## Project Structure
 

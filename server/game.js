@@ -4,16 +4,25 @@
  * instances. Pure of any socket knowledge; the Room wires events out.
  */
 const { Rng, randomSeed } = require('./rng');
-const { getModule, MODULES } = require('./modules');
+const { getModule } = require('./modules');
 
 const DIFFICULTY = {
   easy:   { moduleCount: 3, timeMs: 6 * 60 * 1000,   maxStrikes: 3, strikeAccel: 0.15 },
-  normal: { moduleCount: 5, timeMs: 5 * 60 * 1000,   maxStrikes: 3, strikeAccel: 0.25 },
+  normal: { moduleCount: 4, timeMs: 5 * 60 * 1000,   maxStrikes: 3, strikeAccel: 0.25 },
   hard:   { moduleCount: 5, timeMs: 3 * 60 * 1000,   maxStrikes: 2, strikeAccel: 0.4 }
 };
 
-const AF_MODULES = ['ordnance', 'comms', 'threatplot', 'brevity'];
-const HARD_AF_COUNT = 3;
+const CLASSIC_MODULES = ['wires', 'symbols', 'memory', 'morse', 'logicgrid'];
+const HARD_MODULES = ['ordnance', 'comms', 'threatplot', 'brevity'];
+
+function pickTypes(rng, difficulty) {
+  const classic = rng.shuffle(CLASSIC_MODULES.slice());
+  const hard = rng.shuffle(HARD_MODULES.slice());
+  if (difficulty === 'easy') return rng.shuffle(classic.slice(0, 3));
+  if (difficulty === 'hard') return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 2)]);
+  // medium / normal: three classic + one hard
+  return rng.shuffle([...classic.slice(0, 3), ...hard.slice(0, 1)]);
+}
 
 function makeSerial(rng) {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -43,19 +52,7 @@ class Game {
     this.status = 'running'; // running | won | lost
     this.startedAt = Date.now();
 
-    // Pick module types. Hard always draws three of the demanding AF
-    // modules; easy keeps to the classic five for a gentler intro.
-    const allTypes = MODULES.map((m) => m.type);
-    let types;
-    if (this.difficulty === 'hard') {
-      const af = rng.shuffle(AF_MODULES.slice()).slice(0, HARD_AF_COUNT);
-      const rest = rng.shuffle(allTypes.filter((t) => !af.includes(t)));
-      types = rng.shuffle([...af, ...rest.slice(0, this.config.moduleCount - af.length)]);
-    } else if (this.difficulty === 'easy') {
-      types = rng.shuffle(allTypes.filter((t) => !AF_MODULES.includes(t))).slice(0, this.config.moduleCount);
-    } else {
-      types = rng.shuffle(allTypes).slice(0, this.config.moduleCount);
-    }
+    const types = pickTypes(rng, this.difficulty);
     this.modules = types.map((type, i) => {
       const mod = getModule(type);
       const ctx = { rng: rng.child(`${type}#${i}`), difficulty: this.difficulty, serial: this.serial };
@@ -176,4 +173,4 @@ class Game {
   }
 }
 
-module.exports = { Game, DIFFICULTY };
+module.exports = { Game, DIFFICULTY, CLASSIC_MODULES, HARD_MODULES };

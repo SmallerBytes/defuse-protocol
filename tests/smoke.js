@@ -6,7 +6,7 @@
 const assert = require('assert');
 const { Rng } = require('../server/rng');
 const { MODULES, getModule } = require('../server/modules');
-const { Game } = require('../server/game');
+const { Game, CLASSIC_MODULES, HARD_MODULES } = require('../server/game');
 
 let passed = 0;
 function check(label, fn) {
@@ -196,6 +196,49 @@ check('clues admit exactly one solution', () => {
   for (const seed of SEEDS) {
     const { state } = lg.generate(ctxFor(seed + ':uniq', 'hard'));
     assert.ok(state.questions.length > 0);
+  }
+});
+
+console.log('difficulty mix');
+check('easy is 3 classic modules', () => {
+  const noop = { onTick() {}, onStrike() {}, onModuleUpdate() {}, onModuleSolved() {}, onGameOver() {} };
+  const logger = { log() {} };
+  for (const seed of SEEDS) {
+    const g = new Game({ difficulty: 'easy', seed, events: noop, logger });
+    try {
+      assert.strictEqual(g.modules.length, 3);
+      assert.ok(g.modules.every((m) => CLASSIC_MODULES.includes(m.type)));
+    } finally { g.destroy(); }
+  }
+});
+check('medium is 3 classic + 1 hard', () => {
+  const noop = { onTick() {}, onStrike() {}, onModuleUpdate() {}, onModuleSolved() {}, onGameOver() {} };
+  const logger = { log() {} };
+  for (const seed of SEEDS) {
+    const g = new Game({ difficulty: 'normal', seed, events: noop, logger });
+    try {
+      const types = g.modules.map((m) => m.type);
+      assert.strictEqual(types.length, 4);
+      const hard = types.filter((t) => HARD_MODULES.includes(t));
+      const classic = types.filter((t) => CLASSIC_MODULES.includes(t));
+      assert.strictEqual(hard.length, 1);
+      assert.strictEqual(classic.length, 3);
+    } finally { g.destroy(); }
+  }
+});
+check('hard is 3 classic + 2 hard', () => {
+  const noop = { onTick() {}, onStrike() {}, onModuleUpdate() {}, onModuleSolved() {}, onGameOver() {} };
+  const logger = { log() {} };
+  for (const seed of SEEDS) {
+    const g = new Game({ difficulty: 'hard', seed, events: noop, logger });
+    try {
+      const types = g.modules.map((m) => m.type);
+      assert.strictEqual(types.length, 5);
+      const hard = types.filter((t) => HARD_MODULES.includes(t));
+      const classic = types.filter((t) => CLASSIC_MODULES.includes(t));
+      assert.strictEqual(hard.length, 2);
+      assert.strictEqual(classic.length, 3);
+    } finally { g.destroy(); }
   }
 });
 
