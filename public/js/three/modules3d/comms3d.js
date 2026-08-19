@@ -24,10 +24,10 @@ export function build({ view, send }) {
   const freqTex = new CanvasTex(448, 112);
   const freqScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.115, 0.03), displayMaterial(freqTex));
   freqScreen.rotation.x = -Math.PI / 2;
-  freqScreen.position.set(-0.055, 0.0205, -0.04);
+  freqScreen.position.set(-0.055, 0.0205, 0.01);
   const freqHousing = new THREE.Mesh(new RoundedBoxGeometry(0.13, 0.02, 0.042, 2, 0.005),
     new THREE.MeshStandardMaterial({ color: 0x20242c, roughness: 0.5, metalness: 0.3 }));
-  freqHousing.position.set(-0.055, 0.01, -0.04);
+  freqHousing.position.set(-0.055, 0.01, 0.01);
   freqHousing.castShadow = true;
   group.add(freqHousing, freqScreen);
 
@@ -35,10 +35,10 @@ export function build({ view, send }) {
   const letterTex = new CanvasTex(128, 112);
   const letterScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.032, 0.03), displayMaterial(letterTex));
   letterScreen.rotation.x = -Math.PI / 2;
-  letterScreen.position.set(0.075, 0.0205, -0.04);
+  letterScreen.position.set(0.075, 0.0205, 0.01);
   const letterHousing = new THREE.Mesh(new RoundedBoxGeometry(0.045, 0.02, 0.042, 2, 0.005),
     new THREE.MeshStandardMaterial({ color: 0x20242c, roughness: 0.5, metalness: 0.3 }));
-  letterHousing.position.set(0.075, 0.01, -0.04);
+  letterHousing.position.set(0.075, 0.01, 0.01);
   letterHousing.castShadow = true;
   group.add(letterHousing, letterScreen);
 
