@@ -9,7 +9,7 @@ const { getModule } = require('./modules');
 const DIFFICULTY = {
   easy:   { moduleCount: 3, timeMs: 6 * 60 * 1000,   maxStrikes: 3, strikeAccel: 0.15 },
   normal: { moduleCount: 4, timeMs: 5 * 60 * 1000,   maxStrikes: 3, strikeAccel: 0.25 },
-  hard:   { moduleCount: 5, timeMs: 3 * 60 * 1000,   maxStrikes: 2, strikeAccel: 0.4 }
+  hard:   { moduleCount: 5, timeMs: 8 * 60 * 1000,   maxStrikes: 2, strikeAccel: 0.4 }
 };
 
 const CLASSIC_MODULES = ['wires', 'symbols', 'memory', 'morse', 'logicgrid'];

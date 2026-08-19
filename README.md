@@ -79,12 +79,12 @@ The **manual is permanent**. Only the bomb layout is random each game (replayabl
 | ---------- | ------- | ---- | ------- | ---------------------- |
 | Easy       | 3       | 6:00 | 3       | +15%                   |
 | Medium     | 4       | 5:00 | 3       | +25%                   |
-| Hard       | 5       | 3:00 | 2       | +40%                   |
+| Hard       | 5       | 8:00 | 2       | +40%                   |
 
 Easy, Medium, and Hard keep those module mixes. **Hard always includes
 Weapons Release**, plus one other hard module. Timer length for each
 difficulty can be changed from **SETTINGS** on the home screen (saved in
-the browser). Defaults are 6:00 / 5:00 / 3:00.
+the browser). Defaults are 6:00 / 5:00 / 8:00.
 
 ## Project Structure
 

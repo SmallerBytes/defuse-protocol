@@ -15,7 +15,9 @@ const DIFF_KEY = 'defuse-protocol.difficulty';
 const TIME_KEY = 'defuse-protocol.times';
 const STATS_KEY = 'defuse-protocol.stats';
 
-const DEFAULT_TIMES = { easy: 6 * 60 * 1000, normal: 5 * 60 * 1000, hard: 3 * 60 * 1000 };
+const DEFAULT_TIMES = { easy: 6 * 60 * 1000, normal: 5 * 60 * 1000, hard: 8 * 60 * 1000 };
+const TIME_VER_KEY = 'defuse-protocol.times.v';
+const OLD_HARD_MS = 3 * 60 * 1000;
 const TIME_OPTIONS_MS = [
   60 * 1000, 90 * 1000, 2 * 60 * 1000, 150 * 1000, 3 * 60 * 1000,
   4 * 60 * 1000, 5 * 60 * 1000, 6 * 60 * 1000, 7 * 60 * 1000,
@@ -114,11 +116,17 @@ function clampTime(ms) {
 function loadTimes() {
   try {
     const raw = JSON.parse(localStorage.getItem(TIME_KEY) || '{}');
-    return {
+    const times = {
       easy: clampTime(raw.easy) ?? DEFAULT_TIMES.easy,
       normal: clampTime(raw.normal) ?? DEFAULT_TIMES.normal,
       hard: clampTime(raw.hard) ?? DEFAULT_TIMES.hard
     };
+    if (localStorage.getItem(TIME_VER_KEY) !== '2') {
+      if (times.hard === OLD_HARD_MS) times.hard = DEFAULT_TIMES.hard;
+      localStorage.setItem(TIME_VER_KEY, '2');
+      saveTimes(times);
+    }
+    return times;
   } catch {
     return { ...DEFAULT_TIMES };
   }

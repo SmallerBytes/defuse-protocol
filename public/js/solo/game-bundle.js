@@ -1403,7 +1403,7 @@ var require_game = __commonJS({
     var DIFFICULTY = {
       easy: { moduleCount: 3, timeMs: 6 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.15 },
       normal: { moduleCount: 4, timeMs: 5 * 60 * 1e3, maxStrikes: 3, strikeAccel: 0.25 },
-      hard: { moduleCount: 5, timeMs: 3 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
+      hard: { moduleCount: 5, timeMs: 8 * 60 * 1e3, maxStrikes: 2, strikeAccel: 0.4 }
     };
     var CLASSIC_MODULES = ["wires", "symbols", "memory", "morse", "logicgrid"];
     var HARD_MODULES = ["ordnance", "comms", "threatplot", "brevity"];
