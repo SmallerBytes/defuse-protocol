@@ -13,12 +13,12 @@ function paintGlyph(ctx, w, h, glyph, bg = '#e6e0cb') {
   ctx.textBaseline = 'middle';
   const x = w / 2;
   const y = h / 2 + h * 0.03;
-  ctx.fillStyle = '#5a554c';
+  ctx.fillStyle = '#4a453c';
   ctx.fillText(glyph, x, y);
-  // carve the edges so the glyph reads as a thin print, not a heavy fill
+  // light carve so the glyph stays a print, not a heavy fill — just thick enough to read
   ctx.strokeStyle = bg;
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 3.5;
+  ctx.lineWidth = 1.8;
   ctx.strokeText(glyph, x, y);
 }
 
