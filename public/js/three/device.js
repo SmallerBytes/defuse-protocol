@@ -207,7 +207,7 @@ export class Device {
     if (this.pest === !!on) return;
     this.pest = !!on;
     this.setTimer(this._lastTimerMs ?? 0, true);
-    if (!this.pest) this.timerScreenMat.emissiveIntensity = 1.4;
+    if (!this.pest) this.timerScreenMat.color.setHex(0xffffff);
   }
 
   timerWorldPos(out) {
@@ -222,6 +222,8 @@ export class Device {
   gameOver(won) {
     this.over = true;
     this.won = won;
+    this.pest = false;
+    this.timerScreenMat.color.setHex(0xffffff);
     this.setTimer(0, true);
     if (won) for (const e of this.entries.values()) e.ledMat.emissiveIntensity = 1.8;
   }
@@ -231,7 +233,8 @@ export class Device {
       if (e.builder && e.builder.tick) e.builder.tick(dt, t, e.solved || this.over);
     }
     if (this.pest && !this.over) {
-      this.timerScreenMat.emissiveIntensity = 1.5 + Math.sin(t * 9) * 0.9;
+      const pulse = 0.72 + Math.sin(t * 9) * 0.28;
+      this.timerScreenMat.color.setRGB(pulse, pulse, pulse);
     }
   }
 }

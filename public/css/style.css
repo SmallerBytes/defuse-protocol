@@ -341,6 +341,14 @@ body.xr-presenting #scene-container {
 .end-card h2 { font-size: 2rem; letter-spacing: 0.3em; margin-bottom: 8px; }
 .end-card h2.win { color: var(--accent); }
 .end-card h2.loss { color: var(--danger); }
+.end-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+.end-actions .btn { width: 100%; }
+.end-actions .ghost { margin-top: 4px; }
 .end-reason { color: var(--muted); margin-bottom: 20px; font-size: 0.85rem; }
 .end-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
 .end-summary .stat-cell b { font-size: 1.3rem; }

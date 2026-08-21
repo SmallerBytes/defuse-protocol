@@ -39,6 +39,8 @@ const state = {
   scene3d: null,
   session: null,
   lastSecond: null,
+  lastSeed: null,
+  lastEnterVr: false,
   xrSupported: false
 };
 
@@ -56,17 +58,12 @@ function getSeed() {
   return String($('input-seed').value || '').trim();
 }
 
-function setSeedField(seed, { fromDetonation = false } = {}) {
+function setSeedField(seed) {
   $('input-seed').value = seed || '';
   const hint = $('seed-hint');
   if (!hint) return;
-  if (fromDetonation && seed) {
-    hint.textContent = 'Detonation. Last seed loaded — hit RESET for a completely new bomb.';
-    hint.classList.add('alert');
-  } else {
-    hint.textContent = 'Leave blank for a random bomb. After a detonation, the last seed is filled in so you can retry.';
-    hint.classList.remove('alert');
-  }
+  hint.textContent = 'Leave blank for a random bomb. Use a seed to replay the same layout.';
+  hint.classList.remove('alert');
 }
 
 function returnToMenu() {
@@ -310,7 +307,7 @@ function ensureScene() {
   return state.scene3d;
 }
 
-function startMission({ enterVr = false } = {}) {
+function startMission({ enterVr = false, seed } = {}) {
   persistPrefs();
   closeSettings();
   $('home-error').textContent = '';
@@ -321,10 +318,15 @@ function startMission({ enterVr = false } = {}) {
   }
 
   sound.unlock();
+  state.lastEnterVr = !!enterVr;
+  const missionSeed = (() => {
+    const raw = seed !== undefined ? seed : getSeed();
+    return String(raw || '').trim() || undefined;
+  })();
 
   const session = startSoloGame({
     difficulty: getDifficulty(),
-    seed: getSeed() || undefined,
+    seed: missionSeed,
     timeMs: loadTimes()[getDifficulty()],
     maxStrikes: loadStrikes()[getDifficulty()],
     onTick: ({ remainingMs }) => {
@@ -353,6 +355,7 @@ function startMission({ enterVr = false } = {}) {
 
   state.session = session;
   state.game = session.payload;
+  state.lastSeed = session.payload.seed;
   state.lastSecond = null;
 
   $('hud-seed').textContent = session.payload.seed;
@@ -439,20 +442,19 @@ function handleGameOver(summary) {
   recordStats(summary);
   const won = summary.result === 'won';
   won ? sound.win() : sound.lose();
+  state.lastSeed = summary.seed;
   if (state.scene3d) {
     if (state.scene3d.isXRPresenting()) state.scene3d.exitVR();
     state.scene3d.gameOver(won);
   }
 
-  if (!won) {
-    setSeedField(summary.seed, { fromDetonation: true });
-    setTimeout(() => returnToMenu(), 1400);
-    return;
-  }
-
-  $('end-title').textContent = 'DEVICE DEFUSED';
-  $('end-title').className = 'win';
-  $('end-reason').textContent = `All modules neutralized with ${fmtTime(summary.timeRemainingMs)} to spare.`;
+  $('end-title').textContent = won ? 'DEVICE DEFUSED' : 'DETONATION';
+  $('end-title').className = won ? 'win' : 'loss';
+  $('end-reason').textContent = won
+    ? `All modules neutralized with ${fmtTime(summary.timeRemainingMs)} to spare.`
+    : (summary.reason === 'strikes'
+      ? 'Strike limit reached. The device detonated.'
+      : 'Timer expired. The device detonated.');
 
   $('end-summary').innerHTML = [
     [summary.modulesSolved + '/' + summary.modulesTotal, 'MODULES'],
@@ -462,9 +464,23 @@ function handleGameOver(summary) {
     [summary.seed, 'SEED']
   ].map(([v, l]) => `<div class="stat-cell"><b>${v}</b><span>${l}</span></div>`).join('');
 
-  setTimeout(() => show('end'), 900);
+  setTimeout(() => show('end'), won ? 900 : 1400);
 }
 
 $('btn-seed-reset')?.addEventListener('click', () => setSeedField(''));
 
-$('btn-back-home')?.addEventListener('click', () => returnToMenu());
+$('btn-restart-bomb')?.addEventListener('click', () => {
+  if (!state.lastSeed) return;
+  setSeedField(state.lastSeed);
+  startMission({ enterVr: state.lastEnterVr, seed: state.lastSeed });
+});
+
+$('btn-new-bomb')?.addEventListener('click', () => {
+  setSeedField('');
+  startMission({ enterVr: state.lastEnterVr, seed: '' });
+});
+
+$('btn-back-home')?.addEventListener('click', () => {
+  setSeedField('');
+  returnToMenu();
+});

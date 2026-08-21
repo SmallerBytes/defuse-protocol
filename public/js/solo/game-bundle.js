@@ -475,7 +475,7 @@ var require_morse = __commonJS({
         Y: "-.--",
         Z: "--.."
       },
-      intro: "The lamp stays dark for a few seconds after the round starts, then flashes the word on a loop. A short gap separates dots/dashes within a letter; a longer gap separates letters; a long pause repeats the word. Press RST to restart from the first letter. Press SND to hear the tone with the lamp (lights still flash either way). Decode the word, find it in the frequency table, then have the Defuser tune to that frequency and transmit (TX).",
+      intro: "The lamp stays dark for a few seconds after the round begins, then flashes the word on a loop. A short gap separates dots/dashes within a letter; a longer gap separates letters; a long pause repeats the word. Press RST \u2014 the button and lamp flash green, then after a short pause the message restarts from the first letter. Press SND to hear the tone with the lamp (lights still flash either way). Decode the word, find it in the frequency table, then have the Defuser tune to that frequency and transmit (TX).",
       baseFrequency: 3.505,
       frequencyStep: 5e-3,
       table: [

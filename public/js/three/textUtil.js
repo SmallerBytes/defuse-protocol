@@ -14,7 +14,11 @@ export class CanvasTex {
     this.ctx = this.canvas.getContext('2d');
     this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.colorSpace = THREE.SRGBColorSpace;
-    this.texture.anisotropy = 4;
+    // Sharp glyphs: no mip blur, crisp sampling when the screen is small in VR.
+    this.texture.generateMipmaps = false;
+    this.texture.minFilter = THREE.LinearFilter;
+    this.texture.magFilter = THREE.LinearFilter;
+    this.texture.anisotropy = 8;
   }
 
   draw(fn) {
@@ -24,15 +28,11 @@ export class CanvasTex {
   }
 }
 
-/** Self-lit screen material (LED/LCD readouts). */
+/** Self-lit screen material (LED/LCD readouts).
+ *  Unlit so Quest lighting / ACES cannot soften the glyphs. */
 export function displayMaterial(canvasTex) {
-  return new THREE.MeshStandardMaterial({
-    color: 0x000000,
-    emissive: 0xffffff,
-    emissiveMap: canvasTex.texture,
-    emissiveIntensity: 1.4,
-    roughness: 0.35,
-    metalness: 0.1
+  return new THREE.MeshBasicMaterial({
+    map: canvasTex.texture
   });
 }
 
@@ -48,20 +48,27 @@ export function labelMaterial(canvasTex) {
 export function drawReadout(ctx, w, h, text, { color = '#39d98a', bg = '#04130a', font = null } = {}) {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
+  // Hairline crisp edge — no soft glow (glow reads as blur on Quest lenses).
+  ctx.imageSmoothingEnabled = false;
   ctx.font = font || `bold ${Math.floor(h * 0.62)}px 'Consolas', monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.shadowColor = color;
-  ctx.shadowBlur = h * 0.12;
+  const x = w / 2;
+  const y = h / 2 + h * 0.03;
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, h * 0.035);
+  ctx.strokeText(text, x, y);
   ctx.fillStyle = color;
-  ctx.fillText(text, w / 2, h / 2 + h * 0.03);
-  ctx.shadowBlur = 0;
+  ctx.fillText(text, x, y);
 }
 
 /** Draw a printed keycap/plate label (light background, dark text). */
 export function drawLabel(ctx, w, h, text, { bg = '#e6e0cb', color = '#000000', font = null, stroke = true } = {}) {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
+  ctx.imageSmoothingEnabled = false;
   ctx.font = font || `bold ${Math.floor(h * 0.6)}px 'Consolas', monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -82,6 +89,7 @@ export function drawLabel(ctx, w, h, text, { bg = '#e6e0cb', color = '#000000', 
 export function drawWrapped(ctx, w, h, text, { color = '#ffd23f', bg = '#120e02', size = 34 } = {}) {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
+  ctx.imageSmoothingEnabled = false;
   ctx.font = `bold ${size}px 'Consolas', monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -101,5 +109,13 @@ export function drawWrapped(ctx, w, h, text, { color = '#ffd23f', bg = '#120e02'
   if (line) lines.push(line);
   const lineH = size * 1.25;
   const y0 = h / 2 - ((lines.length - 1) * lineH) / 2;
-  lines.forEach((l, i) => ctx.fillText(l, w / 2, y0 + i * lineH));
+  lines.forEach((l, i) => {
+    const x = w / 2;
+    const y = y0 + i * lineH;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.5, size * 0.06);
+    ctx.lineJoin = 'round';
+    ctx.strokeText(l, x, y);
+    ctx.fillText(l, x, y);
+  });
 }

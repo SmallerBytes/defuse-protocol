@@ -32,7 +32,7 @@
           <input id="input-seed" placeholder="random each run" autocomplete="off" />
           <button id="btn-seed-reset" type="button" class="btn" title="Clear seed for a new bomb">RESET</button>
         </div>
-        <p id="seed-hint" class="field-hint">Leave blank for a random bomb. After a detonation, the last seed is filled in so you can retry.</p>
+        <p id="seed-hint" class="field-hint">Leave blank for a random bomb. Use a seed to replay the same layout.</p>
       </label>
 
       <label class="field">
@@ -145,7 +145,11 @@
       <h2 id="end-title">—</h2>
       <p id="end-reason" class="end-reason"></p>
       <div id="end-summary" class="end-summary"></div>
-      <button id="btn-back-home" class="btn primary">BACK TO MENU</button>
+      <div class="end-actions">
+        <button id="btn-restart-bomb" type="button" class="btn primary">RESTART THIS BOMB</button>
+        <button id="btn-new-bomb" type="button" class="btn">CONTINUE · NEW BOMB</button>
+        <button id="btn-back-home" type="button" class="btn ghost">MAIN MENU</button>
+      </div>
     </div>
   </section>
 

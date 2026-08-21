@@ -6,6 +6,8 @@ import { sound } from '../../sound.js';
 
 const UNIT = 0.22; // seconds per morse unit
 const START_DELAY = 5; // stay dark after the round begins
+const RST_DELAY = 3; // pause after RST before the word restarts
+const RST_FLASH = 0.45; // green confirm flash length
 
 function buildTimeline(pattern) {
   const events = [];
@@ -21,7 +23,7 @@ function buildTimeline(pattern) {
   return events.map((e) => ({ ...e, start: t, end: (t += e.dur) }));
 }
 
-function faceButton(label, { x, z = 0.09, w = 0.05, d = 0.038, bg, color = '#000000', face, side }) {
+function faceButton(label, { x, z = 0.09, w = 0.05, d = 0.038, bg, color = '#000000', side }) {
   const tex = new CanvasTex(160, 96);
   tex.draw((ctx, cw, ch) => drawLabel(ctx, cw, ch, label, { bg, color }));
   const sideMat = new THREE.MeshStandardMaterial({ color: side, roughness: 0.5, metalness: 0.15 });
@@ -119,12 +121,18 @@ export function build({ view, send }) {
   };
   group.add(snd);
 
+  const RST_BG = '#4a86d8';
+  const RST_GREEN = '#39d98a';
   const rst = faceButton('RST', {
-    x: 0.028, bg: '#4a86d8', side: 0x1f4f8a
+    x: 0.028, bg: RST_BG, side: 0x1f4f8a
   });
+  let confirmT = 0;
   rst.userData.onClick = () => {
-    clock = 0;
+    clock = -RST_DELAY;
+    confirmT = RST_FLASH;
+    rst.userData._paint('RST', RST_GREEN);
     setLamp(false);
+    setConfirmLamp(true);
   };
   group.add(rst);
 
@@ -139,10 +147,32 @@ export function build({ view, send }) {
   let clock = -START_DELAY;
   let lampOn = false;
   let toneOn = false;
+  let confirming = false;
+
+  function setConfirmLamp(on) {
+    confirming = on;
+    if (on) {
+      bulbMat.emissive.setHex(0x39d98a);
+      bulbMat.emissiveIntensity = 2.4;
+      lampLight.color.setHex(0x39d98a);
+      lampLight.intensity = 1.8;
+      toneOn = false;
+      sound.morseTone(false);
+    } else {
+      bulbMat.emissive.setHex(0xffc83d);
+      lampLight.color.setHex(0xffc83d);
+      bulbMat.emissiveIntensity = 0;
+      lampLight.intensity = 0;
+      lampOn = false;
+    }
+  }
 
   function setLamp(on) {
+    if (confirming) return;
     if (on !== lampOn) {
       lampOn = on;
+      bulbMat.emissive.setHex(0xffc83d);
+      lampLight.color.setHex(0xffc83d);
       bulbMat.emissiveIntensity = on ? 2.2 : 0;
       lampLight.intensity = on ? 1.6 : 0;
     }
@@ -179,12 +209,23 @@ export function build({ view, send }) {
     }
     if (solved) {
       state.done = true;
+      if (confirming) setConfirmLamp(false);
       setLamp(false);
       return;
     }
+
+    if (confirmT > 0) {
+      confirmT -= dt;
+      if (confirmT <= 0) {
+        confirmT = 0;
+        rst.userData._paint('RST', RST_BG);
+        setConfirmLamp(false);
+      }
+    }
+
     clock += dt;
     if (clock < 0) {
-      setLamp(false);
+      if (!confirming) setLamp(false);
       return;
     }
     clock = clock % loopLen;
