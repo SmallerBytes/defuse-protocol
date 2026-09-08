@@ -143,11 +143,15 @@ export function build({ view, send }) {
   pickle.userData.onClick = () => send({ type: 'pickle' });
   pickle.userData.highlightTargets = [pickle];
   group.add(pickle);
-  const relTex = new CanvasTex(384, 80);
-  relTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'RELEASE', { bg: '#2a2d35', color: '#cfd6e4', font: `bold 22px 'Consolas', monospace` }));
-  const relLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.092, 0.016), labelMaterial(relTex));
+  const relTex = new CanvasTex(512, 128);
+  relTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'RELEASE', {
+    bg: '#2a2d35',
+    color: '#cfd6e4',
+    font: `bold ${Math.floor(h * 0.72)}px 'Consolas', monospace`
+  }));
+  const relLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.024), labelMaterial(relTex));
   relLabel.rotation.x = -Math.PI / 2;
-  relLabel.position.set(0.085, 0.0005, 0.134);
+  relLabel.position.set(0.085, 0.0005, 0.138);
   group.add(relLabel);
 
   function update(v) {
