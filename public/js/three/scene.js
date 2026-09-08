@@ -243,14 +243,13 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   const menuQuat = new THREE.Quaternion();
   const menuFwd = new THREE.Vector3();
 
-  function stickPauseMenu() {
-    if (!pauseMenu.open) return;
+  function placePauseMenu() {
     const head = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
     head.updateMatrixWorld();
     head.getWorldPosition(menuPos);
     head.getWorldQuaternion(menuQuat);
     menuFwd.set(0, 0, -1).applyQuaternion(menuQuat);
-    pauseMenu.group.position.copy(menuPos).addScaledVector(menuFwd, 0.32);
+    pauseMenu.group.position.copy(menuPos).addScaledVector(menuFwd, 0.2);
     pauseMenu.group.quaternion.copy(menuQuat);
   }
 
@@ -261,6 +260,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       return;
     }
     pauseMenu.show();
+    placePauseMenu();
     api.onSystemMenu?.('pause');
   }
 
@@ -384,7 +384,6 @@ export function createDeviceScene(container, initialQuality = 'medium') {
 
     if (!presenting) controls.update();
     xr.tick(dt);
-    stickPauseMenu();
     if (device) device.tick(dt, t);
     fan.tick(dt);
     camera.getWorldPosition(headPos);

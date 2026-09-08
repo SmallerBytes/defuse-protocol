@@ -1,6 +1,6 @@
 /**
- * In-VR pause + settings, parented to the headset camera.
- * Left Quest Y opens it at reading distance.
+ * In-VR pause + settings. Opens on left Quest Y, locked in world space
+ * at the pose in front of the headset.
  */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
