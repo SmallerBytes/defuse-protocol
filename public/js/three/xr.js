@@ -61,21 +61,25 @@ export function attachXR({
         onSelect(hit.object);
       }
     });
-    controller.addEventListener('connected', (e) => {
-      controller.userData.inputSource = e.data;
-      controller.userData.gamepad = e.data.gamepad;
-    });
-    controller.addEventListener('disconnected', () => {
-      controller.userData.inputSource = null;
-      controller.userData.gamepad = null;
-    });
-
     controllers.push(controller);
 
     const grip = renderer.xr.getControllerGrip(i);
     grip.add(modelFactory.createControllerModel(grip));
     dolly.add(grip);
     grips.push(grip);
+
+    function bindSource(e) {
+      controller.userData.inputSource = e.data;
+      controller.userData.gamepad = e.data.gamepad;
+      grip.userData.inputSource = e.data;
+    }
+    controller.addEventListener('connected', bindSource);
+    grip.addEventListener('connected', bindSource);
+    controller.addEventListener('disconnected', () => {
+      controller.userData.inputSource = null;
+      controller.userData.gamepad = null;
+      grip.userData.inputSource = null;
+    });
   }
 
   function castFromController(controller) {
@@ -117,6 +121,7 @@ export function attachXR({
   }
 
   let yWasPressed = false;
+  let leftMenuSource = null;
   function tickMenuButton() {
     if (!renderer.xr.isPresenting) {
       yWasPressed = false;
@@ -125,13 +130,52 @@ export function attachXR({
     const session = renderer.xr.getSession();
     if (!session) return;
     let pressed = false;
+    let ySource = null;
     for (const src of session.inputSources) {
       if (src.handedness !== 'left' || !src.gamepad || !src.gamepad.buttons) continue;
       const y = src.gamepad.buttons[5];
-      if (y && y.pressed) pressed = true;
+      if (y && y.pressed) {
+        pressed = true;
+        ySource = src;
+      }
     }
-    if (pressed && !yWasPressed) onMenuButton && onMenuButton();
+    if (ySource) leftMenuSource = ySource;
+    if (pressed && !yWasPressed) onMenuButton && onMenuButton(ySource);
     yWasPressed = pressed;
+  }
+
+  function spacesForSource(src) {
+    if (src) {
+      for (let i = 0; i < controllers.length; i++) {
+        const data = controllers[i].userData.inputSource;
+        if (data === src || (data && data.gamepad && src.gamepad && data.gamepad === src.gamepad)) {
+          return { controller: controllers[i], grip: grips[i] };
+        }
+      }
+    }
+    for (let i = 0; i < controllers.length; i++) {
+      const data = controllers[i].userData.inputSource;
+      if (data && data.handedness === 'left') {
+        return { controller: controllers[i], grip: grips[i] };
+      }
+    }
+    const session = renderer.xr.getSession();
+    if (session) {
+      for (const input of session.inputSources) {
+        if (input.handedness !== 'left') continue;
+        for (let i = 0; i < controllers.length; i++) {
+          const data = controllers[i].userData.inputSource;
+          if (data === input || controllers[i].userData.gamepad === input.gamepad) {
+            return { controller: controllers[i], grip: grips[i] };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function getLeftHand() {
+    return spacesForSource(leftMenuSource);
   }
 
   // Comfort locomotion state
@@ -244,13 +288,7 @@ export function attachXR({
       updateHover();
     },
     controllers,
-    getLeftGrip() {
-      for (let i = 0; i < controllers.length; i++) {
-        const src = controllers[i].userData.inputSource;
-        if (src && src.handedness === 'left') return grips[i];
-      }
-      return grips[0] || null;
-    },
+    getLeftHand,
     SNAP_DEG,
     MOVE_SPEED
   };

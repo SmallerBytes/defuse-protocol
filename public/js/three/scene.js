@@ -15,8 +15,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Device } from './device.js';
 import { createFly } from './fly.js';
 import { createDeskFan } from './fan.js';
-import { attachXR } from './xr.js';
-import { createPauseMenu } from './pauseMenu.js';
+import { attachXR } from './xr.js?v=20260908i';
+import { createPauseMenu } from './pauseMenu.js?v=20260908i';
 
 export function createDeviceScene(container, initialQuality = 'medium') {
   /* ---------- renderer (XR-compatible) ---------- */
@@ -241,19 +241,15 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   scene.add(pauseMenu.group);
 
   function placePauseMenu() {
-    const grip = xr.getLeftGrip && xr.getLeftGrip();
-    const host = grip || scene;
+    const hand = xr.getLeftHand && xr.getLeftHand();
+    const host = hand && (hand.grip || hand.controller);
+    if (!host) return false;
     if (pauseMenu.group.parent !== host) host.add(pauseMenu.group);
-    if (grip) {
-      // Sit just above the left Touch (Y-button face), tilted toward the eyes.
-      pauseMenu.group.position.set(0, 0.09, 0.03);
-      pauseMenu.group.rotation.set(-Math.PI / 2 + 0.4, 0, 0);
-      pauseMenu.group.scale.setScalar(1.35);
-    } else {
-      pauseMenu.group.position.set(0, 1.3, 0.9);
-      pauseMenu.group.rotation.set(0, 0, 0);
-      pauseMenu.group.scale.setScalar(1);
-    }
+    // Sit just above the left Touch body, facing the player.
+    pauseMenu.group.position.set(0, 0.08, 0.04);
+    pauseMenu.group.rotation.set(-Math.PI / 2 + 0.45, 0, 0);
+    pauseMenu.group.scale.setScalar(1.45);
+    return true;
   }
 
   function openPauseMenu() {
@@ -391,6 +387,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
 
     if (!presenting) controls.update();
     xr.tick(dt);
+    if (pauseMenu.open) placePauseMenu();
     if (device) device.tick(dt, t);
     fan.tick(dt);
     camera.getWorldPosition(headPos);
