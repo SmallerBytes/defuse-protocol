@@ -320,19 +320,44 @@ function ensureScene() {
     state.scene3d.onFlyAudio = (args) => sound.flyAudio(args);
     state.scene3d.onFanChange = (on) => sound.fanHum(on);
     state.scene3d.onSystemMenu = handleSystemMenu;
+    state.scene3d.getVrSettings = () => ({
+      times: loadTimes(),
+      strikes: loadStrikes(),
+      fly: loadFly(),
+      timeOptions: TIME_OPTIONS_MS,
+      strikeOptions: STRIKE_OPTIONS
+    });
+    state.scene3d.onVrSettings = applyVrSettings;
   } else {
     state.scene3d.setQuality(getQuality());
   }
   return state.scene3d;
 }
 
+function applyVrSettings(next) {
+  if (next.times) saveTimes(next.times);
+  if (next.strikes) saveStrikes(next.strikes);
+  if (typeof next.fly === 'boolean') saveFly(next.fly);
+  fillTimeSelects();
+  fillStrikeSelects();
+  $('select-fly').value = loadFly() ? 'yes' : 'no';
+  refreshDifficultyLabels();
+
+  if (state.scene3d) state.scene3d.setFlyEnabled(loadFly());
+  if (state.session?.game && next.strikes) {
+    const diff = state.session.game.difficulty;
+    const max = next.strikes[diff];
+    if (Number.isFinite(max)) {
+      state.session.game.config.maxStrikes = max;
+      updateStrikes(state.session.game.strikes, max);
+    }
+  }
+}
+
 function handleSystemMenu(action) {
   if (action === 'pause') pauseBomb();
   else if (action === 'resume') resumeBomb();
-  else if (action === 'settings') {
-    pauseBomb();
-    openSettings();
-  } else if (action === 'mainMenu') {
+  else if (action === 'mainMenu') {
     setSeedField('');
     returnToMenu();
   }

@@ -225,23 +225,34 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   const upDir = new THREE.Vector3();
   let lastLanded = false;
 
-  let systemLeave = null; // 'settings' | 'mainMenu' | null
+  let systemLeave = null; // 'mainMenu' | null
+  let flyEnabled = false;
 
   const pauseMenu = createPauseMenu({
     onResume: closePauseMenu,
-    onSettings: () => {
-      systemLeave = 'settings';
-      pauseMenu.hide();
-      api.onSystemMenu?.('settings');
-      xr.exitVR();
-    },
     onMainMenu: () => {
       systemLeave = 'mainMenu';
       pauseMenu.hide();
       api.onSystemMenu?.('mainMenu');
-    }
+    },
+    getSettings: () => api.getVrSettings?.(),
+    setSettings: (next) => api.onVrSettings?.(next)
   });
-  dolly.add(pauseMenu.group);
+  scene.add(pauseMenu.group);
+  const menuPos = new THREE.Vector3();
+  const menuQuat = new THREE.Quaternion();
+  const menuFwd = new THREE.Vector3();
+
+  function stickPauseMenu() {
+    if (!pauseMenu.open) return;
+    const head = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+    head.updateMatrixWorld();
+    head.getWorldPosition(menuPos);
+    head.getWorldQuaternion(menuQuat);
+    menuFwd.set(0, 0, -1).applyQuaternion(menuQuat);
+    pauseMenu.group.position.copy(menuPos).addScaledVector(menuFwd, 0.32);
+    pauseMenu.group.quaternion.copy(menuQuat);
+  }
 
   function openPauseMenu() {
     if (!device || device.over || !renderer.xr.isPresenting) return;
@@ -249,7 +260,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       closePauseMenu();
       return;
     }
-    pauseMenu.show(renderer.xr.getCamera(), dolly);
+    pauseMenu.show();
     api.onSystemMenu?.('pause');
   }
 
@@ -336,7 +347,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     },
     onSessionEnd: () => {
       pauseMenu.hide();
-      if (systemLeave !== 'settings' && systemLeave !== 'mainMenu') {
+      if (systemLeave !== 'mainMenu') {
         api.onSystemMenu?.('resume');
       }
       systemLeave = null;
@@ -373,6 +384,7 @@ export function createDeviceScene(container, initialQuality = 'medium') {
 
     if (!presenting) controls.update();
     xr.tick(dt);
+    stickPauseMenu();
     if (device) device.tick(dt, t);
     fan.tick(dt);
     camera.getWorldPosition(headPos);
@@ -441,16 +453,34 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     onFlyAudio: null,
     onFanChange: null,
     onSystemMenu: null,
+    getVrSettings: null,
+    onVrSettings: null,
     startGame(payload, send, { fly: enableFly = false } = {}) {
       pauseMenu.hide();
       if (device) scene.remove(device.group);
       device = new Device(payload, send);
       scene.add(device.group);
       lastLanded = false;
-      fan.setVisible(enableFly);
-      if (enableFly) fly.arm();
+      flyEnabled = !!enableFly;
+      fan.setVisible(flyEnabled);
+      if (flyEnabled) fly.arm();
       else {
         fly.hide();
+        api.onFlyChange?.({ landed: false });
+        api.onFlyAudio?.({ alive: false });
+        api.onFanChange?.(false);
+      }
+    },
+    setFlyEnabled(on) {
+      const next = !!on;
+      if (next === flyEnabled) return;
+      flyEnabled = next;
+      fan.setVisible(flyEnabled);
+      if (flyEnabled) fly.arm();
+      else {
+        fly.hide();
+        lastLanded = false;
+        device?.setPest(false);
         api.onFlyChange?.({ landed: false });
         api.onFlyAudio?.({ alive: false });
         api.onFanChange?.(false);
