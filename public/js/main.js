@@ -2,8 +2,8 @@
  * DEFUSE PROTOCOL — solo VR defuser client (static / Quest Browser).
  * Teammates use manual.html on another device; no multiplayer in-app.
  */
-import { createDeviceScene } from './three/scene.js?v=20260908i';
-import { detectXRSupport } from './three/xr.js?v=20260908i';
+import { createDeviceScene } from './three/scene.js?v=20260908j';
+import { detectXRSupport } from './three/xr.js?v=20260908j';
 import { sound } from './sound.js';
 import { startSoloGame } from './solo/engine.js';
 

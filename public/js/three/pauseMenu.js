@@ -76,7 +76,7 @@ function makeValue(w, h) {
 export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings }) {
   const group = new THREE.Group();
   group.visible = false;
-  group.renderOrder = 10;
+  group.renderOrder = 40;
 
   let page = 'pause';
   const pausePage = new THREE.Group();
@@ -84,10 +84,16 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
   group.add(pausePage, settingsPage);
 
   const pauseBezel = new THREE.Mesh(
-    new RoundedBoxGeometry(0.24, 0.2, 0.012, 3, 0.008),
-    new THREE.MeshStandardMaterial({ color: 0x161a22, roughness: 0.55, metalness: 0.25 })
+    new RoundedBoxGeometry(0.24, 0.2, 0.02, 3, 0.008),
+    new THREE.MeshBasicMaterial({ color: 0x0b0e14 })
   );
   pausePage.add(pauseBezel);
+  const pauseBack = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.255, 0.215),
+    new THREE.MeshBasicMaterial({ color: 0x0b0e14, side: THREE.DoubleSide })
+  );
+  pauseBack.position.z = -0.011;
+  pausePage.add(pauseBack);
 
   const pauseTitle = makeFace(0.21, 0.03, 640, 96, (ctx, w, h) => {
     ctx.fillStyle = '#0c1016';
@@ -129,10 +135,16 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
   pausePage.add(pauseHint);
 
   const settingsBezel = new THREE.Mesh(
-    new RoundedBoxGeometry(0.3, 0.26, 0.012, 3, 0.008),
-    new THREE.MeshStandardMaterial({ color: 0x161a22, roughness: 0.55, metalness: 0.25 })
+    new RoundedBoxGeometry(0.3, 0.26, 0.02, 3, 0.008),
+    new THREE.MeshBasicMaterial({ color: 0x0b0e14 })
   );
   settingsPage.add(settingsBezel);
+  const settingsBack = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.315, 0.275),
+    new THREE.MeshBasicMaterial({ color: 0x0b0e14, side: THREE.DoubleSide })
+  );
+  settingsBack.position.z = -0.011;
+  settingsPage.add(settingsBack);
 
   const settingsTitle = makeFace(0.27, 0.028, 768, 96, (ctx, w, h) => {
     ctx.fillStyle = '#0c1016';
@@ -285,9 +297,15 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
     if (!o.material) return;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     for (const m of mats) {
-      m.depthTest = false;
-      m.depthWrite = false;
+      m.depthTest = true;
+      m.depthWrite = true;
+      m.transparent = false;
+      m.opacity = 1;
+      m.polygonOffset = true;
+      m.polygonOffsetFactor = -2;
+      m.polygonOffsetUnits = -2;
     }
+    o.renderOrder = 40;
   });
 
   return {

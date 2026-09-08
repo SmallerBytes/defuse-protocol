@@ -15,8 +15,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Device } from './device.js';
 import { createFly } from './fly.js';
 import { createDeskFan } from './fan.js';
-import { attachXR } from './xr.js?v=20260908i';
-import { createPauseMenu } from './pauseMenu.js?v=20260908i';
+import { attachXR } from './xr.js?v=20260908j';
+import { createPauseMenu } from './pauseMenu.js?v=20260908j';
 
 export function createDeviceScene(container, initialQuality = 'medium') {
   /* ---------- renderer (XR-compatible) ---------- */
@@ -233,22 +233,36 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     onMainMenu: () => {
       systemLeave = 'mainMenu';
       pauseMenu.hide();
+      setGripModelVisible(hiddenGrip, true);
+      hiddenGrip = null;
       api.onSystemMenu?.('mainMenu');
     },
     getSettings: () => api.getVrSettings?.(),
     setSettings: (next) => api.onVrSettings?.(next)
   });
   scene.add(pauseMenu.group);
+  let hiddenGrip = null;
+
+  function setGripModelVisible(grip, on) {
+    if (!grip) return;
+    for (const child of grip.children) {
+      if (child !== pauseMenu.group) child.visible = on;
+    }
+  }
 
   function placePauseMenu() {
     const hand = xr.getLeftHand && xr.getLeftHand();
     const host = hand && (hand.grip || hand.controller);
     if (!host) return false;
     if (pauseMenu.group.parent !== host) host.add(pauseMenu.group);
-    // Sit just above the left Touch body, facing the player.
-    pauseMenu.group.position.set(0, 0.08, 0.04);
+    pauseMenu.group.position.set(0, 0.12, 0.05);
     pauseMenu.group.rotation.set(-Math.PI / 2 + 0.45, 0, 0);
     pauseMenu.group.scale.setScalar(1.45);
+    if (hand.grip) {
+      if (hiddenGrip && hiddenGrip !== hand.grip) setGripModelVisible(hiddenGrip, true);
+      hiddenGrip = hand.grip;
+      setGripModelVisible(hand.grip, false);
+    }
     return true;
   }
 
@@ -269,6 +283,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       return;
     }
     pauseMenu.hide();
+    setGripModelVisible(hiddenGrip, true);
+    hiddenGrip = null;
     if (pauseMenu.group.parent !== scene) scene.add(pauseMenu.group);
     pauseMenu.group.scale.setScalar(1);
     api.onSystemMenu?.('resume');
@@ -348,6 +364,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     },
     onSessionEnd: () => {
       pauseMenu.hide();
+      setGripModelVisible(hiddenGrip, true);
+      hiddenGrip = null;
       if (pauseMenu.group.parent !== scene) scene.add(pauseMenu.group);
       pauseMenu.group.scale.setScalar(1);
       if (systemLeave !== 'mainMenu') {
@@ -460,6 +478,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     onVrSettings: null,
     startGame(payload, send, { fly: enableFly = false } = {}) {
       pauseMenu.hide();
+      setGripModelVisible(hiddenGrip, true);
+      hiddenGrip = null;
       if (device) scene.remove(device.group);
       device = new Device(payload, send);
       scene.add(device.group);
