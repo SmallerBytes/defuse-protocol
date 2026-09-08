@@ -48,6 +48,15 @@ export function startSoloGame({
     destroy() {
       game.destroy();
     },
+    pause() {
+      game.pause();
+    },
+    resume() {
+      game.resume();
+    },
+    get paused() {
+      return game.paused;
+    },
     DIFFICULTY
   };
 }

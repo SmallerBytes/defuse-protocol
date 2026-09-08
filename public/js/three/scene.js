@@ -16,6 +16,7 @@ import { Device } from './device.js';
 import { createFly } from './fly.js';
 import { createDeskFan } from './fan.js';
 import { attachXR } from './xr.js';
+import { createPauseMenu } from './pauseMenu.js';
 
 export function createDeviceScene(container, initialQuality = 'medium') {
   /* ---------- renderer (XR-compatible) ---------- */
@@ -224,7 +225,45 @@ export function createDeviceScene(container, initialQuality = 'medium') {
   const upDir = new THREE.Vector3();
   let lastLanded = false;
 
+  let systemLeave = null; // 'settings' | 'mainMenu' | null
+
+  const pauseMenu = createPauseMenu({
+    onResume: closePauseMenu,
+    onSettings: () => {
+      systemLeave = 'settings';
+      pauseMenu.hide();
+      api.onSystemMenu?.('settings');
+      xr.exitVR();
+    },
+    onMainMenu: () => {
+      systemLeave = 'mainMenu';
+      pauseMenu.hide();
+      api.onSystemMenu?.('mainMenu');
+    }
+  });
+  dolly.add(pauseMenu.group);
+
+  function openPauseMenu() {
+    if (!device || device.over || !renderer.xr.isPresenting) return;
+    if (pauseMenu.open) {
+      closePauseMenu();
+      return;
+    }
+    pauseMenu.show(renderer.xr.getCamera(), dolly);
+    api.onSystemMenu?.('pause');
+  }
+
+  function closePauseMenu() {
+    if (!pauseMenu.open) {
+      api.onSystemMenu?.('resume');
+      return;
+    }
+    pauseMenu.hide();
+    api.onSystemMenu?.('resume');
+  }
+
   function interactTargets() {
+    if (pauseMenu.open) return pauseMenu.targets;
     const t = device ? [...device.targets] : [];
     if (fan.group.visible) t.push(fan.hit);
     return t;
@@ -282,6 +321,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     onSelect: (obj) => {
       if (obj.userData.onClick) obj.userData.onClick();
     },
+    onMenuButton: openPauseMenu,
+    isMenuOpen: () => pauseMenu.open,
     onSessionStart: () => {
       qualityBeforeVR = currentQuality;
       setQuality('low'); // comfort + perf defaults on Quest
@@ -294,6 +335,11 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       if (api.onXRChange) api.onXRChange(true);
     },
     onSessionEnd: () => {
+      pauseMenu.hide();
+      if (systemLeave !== 'settings' && systemLeave !== 'mainMenu') {
+        api.onSystemMenu?.('resume');
+      }
+      systemLeave = null;
       controls.enabled = true;
       dolly.position.set(0, 0, 0);
       dolly.rotation.set(0, 0, 0);
@@ -394,7 +440,9 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     onFlyChange: null,
     onFlyAudio: null,
     onFanChange: null,
+    onSystemMenu: null,
     startGame(payload, send, { fly: enableFly = false } = {}) {
+      pauseMenu.hide();
       if (device) scene.remove(device.group);
       device = new Device(payload, send);
       scene.add(device.group);

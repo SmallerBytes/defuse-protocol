@@ -41,7 +41,8 @@ const state = {
   lastSecond: null,
   lastSeed: null,
   lastEnterVr: false,
-  xrSupported: false
+  xrSupported: false,
+  menuPaused: false
 };
 
 function getQuality() {
@@ -67,6 +68,7 @@ function setSeedField(seed) {
 }
 
 function returnToMenu() {
+  state.menuPaused = false;
   if (state.session) {
     state.session.destroy();
     state.session = null;
@@ -228,6 +230,22 @@ function closeSettings() {
   saveFly($('select-fly').value === 'yes');
   refreshDifficultyLabels();
   $('settings-overlay').classList.add('hidden');
+  resumeBomb();
+}
+
+function pauseBomb() {
+  if (!state.session || state.menuPaused) return;
+  state.session.pause();
+  state.menuPaused = true;
+}
+
+function resumeBomb() {
+  if (!state.menuPaused || !state.session) {
+    state.menuPaused = false;
+    return;
+  }
+  state.session.resume();
+  state.menuPaused = false;
 }
 
 function loadFly() {
@@ -301,14 +319,28 @@ function ensureScene() {
     };
     state.scene3d.onFlyAudio = (args) => sound.flyAudio(args);
     state.scene3d.onFanChange = (on) => sound.fanHum(on);
+    state.scene3d.onSystemMenu = handleSystemMenu;
   } else {
     state.scene3d.setQuality(getQuality());
   }
   return state.scene3d;
 }
 
+function handleSystemMenu(action) {
+  if (action === 'pause') pauseBomb();
+  else if (action === 'resume') resumeBomb();
+  else if (action === 'settings') {
+    pauseBomb();
+    openSettings();
+  } else if (action === 'mainMenu') {
+    setSeedField('');
+    returnToMenu();
+  }
+}
+
 function startMission({ enterVr = false, seed } = {}) {
   persistPrefs();
+  state.menuPaused = false;
   closeSettings();
   $('home-error').textContent = '';
 
@@ -371,7 +403,7 @@ function startMission({ enterVr = false, seed } = {}) {
 
   show('game');
   $('scene-hint').textContent = enterVr
-    ? 'VR · Trigger = interact · Left stick = move · Right stick = snap turn'
+    ? 'VR · Trigger = interact · Y = menu · Left stick = move · Right stick = snap turn'
     : 'DRAG to orbit · CLICK to interact · ENTER VR when ready · read serial on case front';
 
   if (enterVr) {

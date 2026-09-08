@@ -1446,6 +1446,7 @@ var require_game = __commonJS({
         this.strikes = 0;
         this.remainingMs = this.config.timeMs;
         this.status = "running";
+        this._paused = false;
         this.startedAt = Date.now();
         const types = pickTypes(rng, this.difficulty);
         this.modules = types.map((type, i) => {
@@ -1473,9 +1474,26 @@ var require_game = __commonJS({
         if (this.flyLanded) scale += 0.5;
         return scale;
       }
+      pause() {
+        if (this.status !== "running" || this._paused) return;
+        this._paused = true;
+        this._lastTick = Date.now();
+      }
+      resume() {
+        if (!this._paused) return;
+        this._paused = false;
+        this._lastTick = Date.now();
+      }
+      get paused() {
+        return this._paused;
+      }
       _tick() {
         if (this.status !== "running") return;
         const now = Date.now();
+        if (this._paused) {
+          this._lastTick = now;
+          return;
+        }
         this.remainingMs -= (now - this._lastTick) * this.timeScale;
         this._lastTick = now;
         if (this.remainingMs <= 0) {
@@ -1487,7 +1505,7 @@ var require_game = __commonJS({
       }
       /** Defuser interacted with a module. */
       handleAction(moduleId, action, playerName) {
-        if (this.status !== "running") return;
+        if (this.status !== "running" || this._paused) return;
         const inst = this.modules.find((m) => m.id === moduleId);
         if (!inst || inst.solved) return;
         const mod = getModule(inst.type);

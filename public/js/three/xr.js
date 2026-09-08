@@ -22,7 +22,9 @@ export function attachXR({
   getTargets,
   onSelect,
   onSessionStart,
-  onSessionEnd
+  onSessionEnd,
+  onMenuButton,
+  isMenuOpen
 }) {
   renderer.xr.enabled = true;
   // Prefer floor-relative tracking so standing height matches the room.
@@ -114,6 +116,24 @@ export function attachXR({
     }
   }
 
+  let yWasPressed = false;
+  function tickMenuButton() {
+    if (!renderer.xr.isPresenting) {
+      yWasPressed = false;
+      return;
+    }
+    const session = renderer.xr.getSession();
+    if (!session) return;
+    let pressed = false;
+    for (const src of session.inputSources) {
+      if (src.handedness !== 'left' || !src.gamepad || !src.gamepad.buttons) continue;
+      const y = src.gamepad.buttons[5];
+      if (y && y.pressed) pressed = true;
+    }
+    if (pressed && !yWasPressed) onMenuButton && onMenuButton();
+    yWasPressed = pressed;
+  }
+
   // Comfort locomotion state
   let snapCooldown = 0;
   const headForward = new THREE.Vector3();
@@ -130,6 +150,7 @@ export function attachXR({
 
   function tickLocomotion(dt) {
     if (!renderer.xr.isPresenting) return;
+    if (isMenuOpen && isMenuOpen()) return;
     snapCooldown = Math.max(0, snapCooldown - dt);
 
     const session = renderer.xr.getSession();
@@ -218,6 +239,7 @@ export function attachXR({
     isPresenting: () => renderer.xr.isPresenting,
     tick(dt) {
       if (!renderer.xr.isPresenting) return;
+      tickMenuButton();
       tickLocomotion(dt);
       updateHover();
     },
