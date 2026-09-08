@@ -66,7 +66,7 @@ The Node server under `server/` is optional legacy multiplayer code for local de
 | Memory Sequence | Random displays + shuffled labels                           | Fixed per-stage lookup rules                       |
 | Morse Code      | Random word flashed in Morse                                | Fixed alphabet + word→frequency table              |
 | Joint Functions | Captains × functions × phases (SOS)                        | Example roster (blank function/phase); notes on clipboard |
-| Weapons Release | Stores panel: ARM lever, station knob, fuze, code wheels, PICKLE | Weaponeering rules, fuze/code rules, release checklist |
+| Weapons Release | Stores panel: ARM lever, station knob, fuze, code wheels, RELEASE | Weaponeering rules, fuze/code rules, release checklist |
 | Radio Net       | UHF radio: coarse/fine tuning, XMIT key, A–Z letter dial   | Fixed comms annex + phonetic authentication matrix |
 | Threat Plot     | Radar scope: jet, SAM sites, target — no coverage rings    | SAM coverage table + route rules (talk the jet through) |
 | Brevity Code    | CRT word above six brevity-word buttons                    | Two-step indirection tables (word → position → word) |

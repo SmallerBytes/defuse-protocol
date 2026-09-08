@@ -12,7 +12,7 @@
   },
   "movingTargets": ["T-72 COLUMN", "ARMOR CONVOY", "SCUD TEL"],
   "staticTargets": ["RADAR SITE", "C2 BUNKER", "SUPPLY DEPOT", "HQ BUILDING", "SAM SITE"],
-  "intro": "A stores-management panel with a targeting screen. The Defuser must fly a full release checklist for every target card — one wrong PICKLE is a strike. The Defuser reads the target card aloud; you weaponeer it and talk them through the panel setup.",
+  "intro": "A stores-management panel with a targeting screen. The Defuser must fly a full release checklist for every target card — one wrong RELEASE is a strike. The Defuser reads the target card aloud; you weaponeer it and talk them through the panel setup.",
   "rules": [
     "If the target is MOVING, select AGM-65.",
     "Otherwise, if the target is URBAN (collateral must stay LOW), select GBU-38.",
@@ -33,7 +33,7 @@
     "Rotate the STATION knob until the correct weapon shows.",
     "Set the FUZE switch (NOSE / TAIL).",
     "Dial the 3-digit CODE on the thumbwheels.",
-    "Press PICKLE. Repeat for each target card.",
+    "Press RELEASE. Repeat for each target card.",
     "After the final target: MASTER ARM back to SAFE, or the module never disarms."
   ]
 }

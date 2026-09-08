@@ -127,7 +127,7 @@ export function build({ view, send }) {
   codeLabel.position.set(-0.065, 0.0005, 0.062);
   group.add(codeLabel);
 
-  /* ---- PICKLE button (front-right, guarded ring) ---- */
+  /* ---- RELEASE button (front-right, guarded ring) ---- */
   const guard = new THREE.Mesh(
     new THREE.TorusGeometry(0.026, 0.004, 10, 24),
     new THREE.MeshStandardMaterial({ color: 0xc9b458, metalness: 0.6, roughness: 0.45 })
@@ -143,6 +143,12 @@ export function build({ view, send }) {
   pickle.userData.onClick = () => send({ type: 'pickle' });
   pickle.userData.highlightTargets = [pickle];
   group.add(pickle);
+  const relTex = new CanvasTex(192, 48);
+  relTex.draw((ctx, w, h) => drawLabel(ctx, w, h, 'REL', { bg: '#2a2d35', color: '#cfd6e4', font: `bold 28px 'Consolas', monospace` }));
+  const relLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.012), labelMaterial(relTex));
+  relLabel.rotation.x = -Math.PI / 2;
+  relLabel.position.set(0.085, 0.0005, 0.118);
+  group.add(relLabel);
 
   function update(v) {
     cardTex.draw((ctx, w, h) => {
