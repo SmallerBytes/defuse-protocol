@@ -244,6 +244,13 @@ export function attachXR({
       updateHover();
     },
     controllers,
+    getLeftGrip() {
+      for (let i = 0; i < controllers.length; i++) {
+        const src = controllers[i].userData.inputSource;
+        if (src && src.handedness === 'left') return grips[i];
+      }
+      return grips[0] || null;
+    },
     SNAP_DEG,
     MOVE_SPEED
   };

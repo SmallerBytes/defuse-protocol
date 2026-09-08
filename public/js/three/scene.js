@@ -239,18 +239,21 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     setSettings: (next) => api.onVrSettings?.(next)
   });
   scene.add(pauseMenu.group);
-  const menuPos = new THREE.Vector3();
-  const menuQuat = new THREE.Quaternion();
-  const menuFwd = new THREE.Vector3();
 
   function placePauseMenu() {
-    const head = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
-    head.updateMatrixWorld();
-    head.getWorldPosition(menuPos);
-    head.getWorldQuaternion(menuQuat);
-    menuFwd.set(0, 0, -1).applyQuaternion(menuQuat);
-    pauseMenu.group.position.copy(menuPos).addScaledVector(menuFwd, 0.2);
-    pauseMenu.group.quaternion.copy(menuQuat);
+    const grip = xr.getLeftGrip && xr.getLeftGrip();
+    const host = grip || scene;
+    if (pauseMenu.group.parent !== host) host.add(pauseMenu.group);
+    if (grip) {
+      // Sit just above the left Touch (Y-button face), tilted toward the eyes.
+      pauseMenu.group.position.set(0, 0.09, 0.03);
+      pauseMenu.group.rotation.set(-Math.PI / 2 + 0.4, 0, 0);
+      pauseMenu.group.scale.setScalar(1.35);
+    } else {
+      pauseMenu.group.position.set(0, 1.3, 0.9);
+      pauseMenu.group.rotation.set(0, 0, 0);
+      pauseMenu.group.scale.setScalar(1);
+    }
   }
 
   function openPauseMenu() {
@@ -270,6 +273,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
       return;
     }
     pauseMenu.hide();
+    if (pauseMenu.group.parent !== scene) scene.add(pauseMenu.group);
+    pauseMenu.group.scale.setScalar(1);
     api.onSystemMenu?.('resume');
   }
 
@@ -347,6 +352,8 @@ export function createDeviceScene(container, initialQuality = 'medium') {
     },
     onSessionEnd: () => {
       pauseMenu.hide();
+      if (pauseMenu.group.parent !== scene) scene.add(pauseMenu.group);
+      pauseMenu.group.scale.setScalar(1);
       if (systemLeave !== 'mainMenu') {
         api.onSystemMenu?.('resume');
       }
