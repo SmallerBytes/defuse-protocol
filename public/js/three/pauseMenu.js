@@ -84,7 +84,7 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
   group.add(pausePage, settingsPage);
 
   const pauseBezel = new THREE.Mesh(
-    new RoundedBoxGeometry(0.24, 0.2, 0.02, 3, 0.008),
+    new RoundedBoxGeometry(0.24, 0.2, 0.012, 3, 0.008),
     new THREE.MeshBasicMaterial({ color: 0x0b0e14 })
   );
   pausePage.add(pauseBezel);
@@ -104,21 +104,21 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
     ctx.textBaseline = 'middle';
     ctx.fillText('PAUSED', w / 2, h / 2 + 3);
   });
-  pauseTitle.position.set(0, 0.07, 0.008);
+  pauseTitle.position.set(0, 0.07, 0.014);
   pausePage.add(pauseTitle);
 
   const resumeBtn = makeButton('RESUME', 0.2, 0.032, '#2f8a4a', '#f2f6f3');
-  resumeBtn.position.set(0, 0.026, 0.008);
+  resumeBtn.position.set(0, 0.026, 0.014);
   resumeBtn.userData.onClick = () => onResume && onResume();
   pausePage.add(resumeBtn);
 
   const settingsBtn = makeButton('SETTINGS', 0.2, 0.032, '#cfd6e4', '#12151b');
-  settingsBtn.position.set(0, -0.012, 0.008);
+  settingsBtn.position.set(0, -0.012, 0.014);
   settingsBtn.userData.onClick = () => setPage('settings');
   pausePage.add(settingsBtn);
 
   const menuBtn = makeButton('MAIN MENU', 0.2, 0.032, '#c43240', '#f7ecec');
-  menuBtn.position.set(0, -0.05, 0.008);
+  menuBtn.position.set(0, -0.05, 0.014);
   menuBtn.userData.onClick = () => onMainMenu && onMainMenu();
   pausePage.add(menuBtn);
 
@@ -131,11 +131,11 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
     ctx.textBaseline = 'middle';
     ctx.fillText('Y TO CLOSE', w / 2, h / 2 + 2);
   });
-  pauseHint.position.set(0, -0.082, 0.008);
+  pauseHint.position.set(0, -0.082, 0.014);
   pausePage.add(pauseHint);
 
   const settingsBezel = new THREE.Mesh(
-    new RoundedBoxGeometry(0.3, 0.26, 0.02, 3, 0.008),
+    new RoundedBoxGeometry(0.3, 0.26, 0.012, 3, 0.008),
     new THREE.MeshBasicMaterial({ color: 0x0b0e14 })
   );
   settingsPage.add(settingsBezel);
@@ -155,7 +155,7 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
     ctx.textBaseline = 'middle';
     ctx.fillText('SETTINGS', w / 2, h / 2 + 3);
   });
-  settingsTitle.position.set(0, 0.105, 0.008);
+  settingsTitle.position.set(0, 0.105, 0.014);
   settingsPage.add(settingsTitle);
 
   const colHead = makeFace(0.27, 0.018, 768, 56, (ctx, w, h) => {
@@ -168,7 +168,7 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
     ctx.fillText('TIME', w * 0.42, h / 2 + 1);
     ctx.fillText('STR', w * 0.78, h / 2 + 1);
   });
-  colHead.position.set(0, 0.082, 0.008);
+  colHead.position.set(0, 0.082, 0.014);
   settingsPage.add(colHead);
 
   const settingsTargets = [];
@@ -176,7 +176,7 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
 
   function addStep(label, w, h, bg, color, onClick, x, y) {
     const btn = makeButton(label, w, h, bg, color);
-    btn.position.set(x, y, 0.008);
+    btn.position.set(x, y, 0.014);
     btn.userData.onClick = onClick;
     settingsPage.add(btn);
     settingsTargets.push(btn);
@@ -194,15 +194,15 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
       ctx.textBaseline = 'middle';
       ctx.fillText(diff.label, w / 2, h / 2 + 2);
     });
-    name.position.set(-0.115, y, 0.008);
+    name.position.set(-0.115, y, 0.014);
     settingsPage.add(name);
 
     const timeVal = makeValue(0.055, 0.024);
-    timeVal.mesh.position.set(-0.02, y, 0.008);
+    timeVal.mesh.position.set(-0.02, y, 0.014);
     settingsPage.add(timeVal.mesh);
 
     const strikeVal = makeValue(0.032, 0.024);
-    strikeVal.mesh.position.set(0.1, y, 0.008);
+    strikeVal.mesh.position.set(0.1, y, 0.014);
     settingsPage.add(strikeVal.mesh);
 
     addStep('◀', 0.028, 0.024, '#cfd6e4', '#12151b', () => nudge(diff.key, 'time', -1), -0.062, y);
@@ -214,7 +214,7 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
   });
 
   const flyVal = makeValue(0.05, 0.024);
-  flyVal.mesh.position.set(0.02, -0.068, 0.008);
+  flyVal.mesh.position.set(0.02, -0.068, 0.014);
   settingsPage.add(flyVal.mesh);
 
   const flyName = makeFace(0.06, 0.024, 160, 64, (ctx, w, h) => {
@@ -226,20 +226,20 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
     ctx.textBaseline = 'middle';
     ctx.fillText('FLY', w / 2, h / 2 + 2);
   });
-  flyName.position.set(-0.11, -0.068, 0.008);
+  flyName.position.set(-0.11, -0.068, 0.014);
   settingsPage.add(flyName);
 
   addStep('◀', 0.028, 0.024, '#cfd6e4', '#12151b', () => nudgeFly(-1), -0.05, -0.068);
   addStep('▶', 0.028, 0.024, '#cfd6e4', '#12151b', () => nudgeFly(1), 0.062, -0.068);
 
   const backBtn = makeButton('BACK', 0.12, 0.028, '#cfd6e4', '#12151b');
-  backBtn.position.set(-0.07, -0.105, 0.008);
+  backBtn.position.set(-0.07, -0.105, 0.014);
   backBtn.userData.onClick = () => setPage('pause');
   settingsPage.add(backBtn);
   settingsTargets.push(backBtn);
 
   const settingsResume = makeButton('RESUME', 0.12, 0.028, '#2f8a4a', '#f2f6f3');
-  settingsResume.position.set(0.07, -0.105, 0.008);
+  settingsResume.position.set(0.07, -0.105, 0.014);
   settingsResume.userData.onClick = () => onResume && onResume();
   settingsPage.add(settingsResume);
   settingsTargets.push(settingsResume);
@@ -301,12 +301,12 @@ export function createPauseMenu({ onResume, onMainMenu, getSettings, setSettings
       m.depthWrite = true;
       m.transparent = false;
       m.opacity = 1;
-      m.polygonOffset = true;
-      m.polygonOffsetFactor = -2;
-      m.polygonOffsetUnits = -2;
     }
-    o.renderOrder = 40;
   });
+  pauseBezel.renderOrder = 38;
+  pauseBack.renderOrder = 38;
+  settingsBezel.renderOrder = 38;
+  settingsBack.renderOrder = 38;
 
   return {
     group,

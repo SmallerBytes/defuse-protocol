@@ -15,8 +15,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Device } from './device.js';
 import { createFly } from './fly.js';
 import { createDeskFan } from './fan.js';
-import { attachXR } from './xr.js?v=20260908j';
-import { createPauseMenu } from './pauseMenu.js?v=20260908j';
+import { attachXR } from './xr.js?v=20260908k';
+import { createPauseMenu } from './pauseMenu.js?v=20260908k';
 
 export function createDeviceScene(container, initialQuality = 'medium') {
   /* ---------- renderer (XR-compatible) ---------- */
